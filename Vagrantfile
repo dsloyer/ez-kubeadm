@@ -1,0 +1,445 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+#
+# As of early-Feb, 2019, this script creates a 3-node k8s cluster, with these versions:
+#   Kubernetes: 1.13.3                          (current version on kubernetes.io)
+#   Docker:     18.06.1                         (prescribed by kubernetes.io)
+#   Centos:     CentOS7,                        (prescribed by kubernetes.io))
+#      Version: version 1901.01                 (latest CentOS7 box from Vagrant)
+#   Ubuntu:     Ubuntu/xenial64                 (prescribed by kubernetes.io)
+#     Version   20190204.3.0                    (latest Ubuntu Xenial box from Vagrant)
+
+# Setup:
+#   1. Install VirtualBox and vagrant on your host system (my host is Ubuntu Bionic Beaver, which
+#      was used to test all of this
+#   2. Create a project directory; cd to the project directory
+#   3. Run vagrant init
+#   4. Cluster network is calico, by default. To change, export an env var, $k8snet, setting it to
+#      one of: calico, canal, flannel, romana, weave
+#   5. We assume kube config files are gathered together in a directory, ~/.kube/configd, on the host. 
+#   6. Pull the collection of files from github into the project directory:
+#        - makeK8s.sh (one script to rule them all, and in the darkness bind them (LOTR))
+#        - Vagrantfile (this file)
+#        - post-k8s.sh (make account for host user on nodes, prepare to pull kube config file, admin.conf)
+#        - pull-k8s-admin.sh (download admin.conf from master, for use on host)
+#        - modKubeConfigFile.sh (process admin.conf file, for 
+#        - setKubeConfigVar.sh (consolidate multi-cluster configs into KUBECONFIG env var)
+#        - copy public key for a desired host user account. E.g., I am dsloyer on my host, and want to ssh
+#          to any node as dsloyer. I copy my id_rsa.pub file into the project directory, for install on nodes
+#        Network files (tweaked for vagrant/VBox, Ubuntu and CentOS). Calico and weave need no mods for vagrant/VBox.
+#        Several CNI's require minor mods their YAML; e.g. use 2nd network adapter (enp0s8/eth1):
+#        - canal2.yaml, canal2c.yaml (canal2 for Ubuntu, canal2c for CentOS), and
+#        - kube-flannel.yaml, kube-flannelc.yaml
+#        Romana curiously seems to present a catch-22: romana-agent won't install on "not-ready" nodes,
+#        but the nodes can only become ready when romana-agent is up and running. Soln: add tolerance for
+#        nodes that are not-ready (applied to the romana-agent daemonset).
+#        - romana-kubeadm.yaml
+#   7. Run "source ./makeK8s.sh -s ubuntu", or "source ./makeK8s.sh -s centos"
+#   8. Edits to the Vagrantfile should only be needed to:
+#       - change master and worker node IP addresses.
+#         Ubuntu master IP is 192.168.205.10; worker node IPs immediately follow, i.e. node1 is 192.168.205.11
+#         CentOS cmaster IP is 192.168.205.15; worker node IPs immediately follow, i.e. cnode1 is 192.168.205.16
+#       - want more/fewer nodes? edit the relevant servers array, below.
+#   9. Install kubectl on your host system, per instructions on kubernetes.io
+#   10. To set the KUBECONFIG env var at any time, on any shell, "source" the script "setKubeConfigVar.sh".
+#   11. Only one context can be active at a time, across multiple shells.
+#   12. Select context via "kubectl config use-context <context-name>"
+#
+# Network Notes:
+#   calico  -- works out of the box
+#   weave   -- works, but worker nodes require a static route to the master node.
+#   romana  -- works, but seems to require romana-agent daemonset tolerance for not-ready nodes
+#   flannel -- works, but its yaml must be tweaked to use enp0s8(Ubuntu) or eth1(CentOS)
+#              host-only interface, not the NAT'd one
+#   canal   -- works, but its yaml must be tweaked to use enp0s8(Ubuntu) or eth1(CentOS)
+#              host-only interface, not the NAT'd one
+#
+# SSH key handling
+#
+# In building the worker nodes, We run a script on each of the nodes to scp the kubernetes join script
+# from the master node (where kubeadm places it, while building the master node).
+# This allows automation of the nodes joining the kubernetes cluster.
+#
+# To use scp, we use the aforementioned key pair for the vagrant user on each of the nodes,
+# in /home/vagrant/.ssh
+# On the master, we also need to add the vagrant pub-key into the master's authorized_keys file, in
+# /home/vagrant/.ssh/authorized_keys
+#
+# Thankfully, the project directory is automatically mounted onto each node by Vagrant, at /vagrant.
+# Therefore, the SSH keys of interest are accessible by all our Vagrant VMs, at that location.
+# I should add, however, that the contents of that directory are not well-synced, so changes to contents
+# of files in /vagrant often go unseen, and may be lost. It's not a file server!
+#
+
+# OK, let's get to it:
+
+# pull desired network from ENV, if defined; if not, default to calico
+$net=ENV['k8snet']
+if $net.to_s.strip.empty?
+  # default to calico
+  $net = "calico"
+end
+
+# Set CIDR, as prescribed by kubernetes.io/docs/setup/independent/create-cluster-kubeadm
+# These CIDR values agree with the values assumed in the respective YAML files, avoiding
+# the need to edit the YAML. If these are changed, YAML must be updated, as well.
+if    $net == "flannel"
+  $netCidr = "--pod-network-cidr=10.244.0.0/16"
+elsif $net == "canal"
+  $netCidr = "--pod-network-cidr=10.244.0.0/16"
+elsif $net == "calico"
+  $netCidr = "--pod-network-cidr=192.168.0.0/16"
+elsif $net == "weave"
+  $netCidr = ""
+elsif $net == "romana"
+  $netCidr = ""
+end
+
+# Install CentOS on all nodes
+# Box-specific settings
+$grpSuffix   = " - Centos"
+$box         = "centos/7"
+$boxVer      = "1901.01"
+$hostAdapter = "eth1"
+
+# Set the desired IP address of the master node, from which node IPs will follow
+$masterIp    = "192.168.205.15"
+
+# RPM-based systems use /etc/sysconfig/kubelet
+# see https://kubernetes.io/docs/setup/independent/kubelet-integration
+$cfgKubelet  = "/etc/sysconfig/kubelet"
+
+# Pointers to network YAML files:
+# The calico network plug-in for kubernetes is installed by applying two yaml files
+# The required files can be found at
+# https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/
+# On that page, scroll down, elect the calico tab, and observe the required yaml file paths
+# Update the paths, as they are updated on kubernetes.io.
+$calico1 = "https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml"
+$calico2 = "https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml"
+
+# Canal yaml:
+$canal1 = "https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/canal/rbac.yaml"
+# As with Flannel, must point to enp0s8 interface: $canal2 = "https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/canal/canal.yaml"
+# use local canal.yaml file, which corrects for Vagrant/VBox (points to 2nd NIC)
+$canal2 = "/vagrant/canal2c.yaml"
+
+# Flannel yaml:
+# Needs tweak for Vagrant: $flannel = "https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml", mod'd here as kube-flannel.yaml
+# use local kube-flannel.yaml file, which corrects for Vagrant/VBox (points to 2nd NIC)
+$flannel = "/vagrant/kube-flannelc.yaml"
+
+# Romana yaml:
+# ORG $romana = "https://raw.githubusercontent.com/romana/romana/master/containerize/specs/romana-kubeadm.yml"
+$romana = "/vagrant/romana-kubeadm.yaml"
+
+# Weave yaml:
+$weave = "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+
+# Note:
+# In many instances, Ruby variables can be used directly, as we can see in the servers array
+#
+# We use Ruby string interpolation, #{varname}, to access the master node's IP 
+# address value from within, say, a HereDoc being formed (see below).
+#
+# The node IP addresses are calculated from the master node address, via Ruby's ".succ"
+# (successor) function applied to strings
+#
+# E.g., if master is 192.168.205.15, then node1 will be .16, node2 .17, etc
+# Vorsicht!: .succ of ".19" is ".10", not ".20"
+
+# servers is a list of the VMs to be instantiated and configured by this script
+servers = [
+  {
+    :name => "cmaster",
+    :type => "master",
+    :box => $box,
+    :box_version => $boxVer,
+    :eth1 => $masterIp,
+    :mem => "2048",
+    :cpu => "2"
+  },
+  {
+    :name => "cnode1",
+    :type => "node",
+    :box => $box,
+    :box_version => $boxVer,
+    :eth1 => $masterIp.succ,
+    :mem => "2048",
+    :cpu => "2"
+  },
+  {
+    :name => "cnode2",
+    :type => "node",
+    :box => $box,
+    :box_version => $boxVer,
+    :eth1 => $masterIp.succ.succ,
+    :mem => "2048",
+    :cpu => "2"
+  }
+]
+
+# Configure CentOS boxes
+# Each VM will be configured using this script, whether kubernetes master, or merely a node
+$configureCentos = <<SCRIPT
+  # ---- BEGIN CRI (container runtime interface) install.
+  # See kubernetes.io/docs/setup/docs/cri. Versions are prescribed
+  # by the kubernetes.io docs. The following commands are directly from
+  # "CRI Installation" for Docker.
+  #
+
+  # Install Docker CE
+  ## Set up the repository
+  ### Install required packages
+  yum install -y yum-utils device-mapper-persistent-data lvm2
+
+  ### Add docker repository
+  yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+  ## Install docker ce
+  yum update --setopt=deltarpm=0 -y && yum install -y docker-ce-18.06.1.ce
+
+  ## Create /etc/docker directory
+  mkdir /etc/docker
+
+  # generate configuration file for docker daemon, dockerd
+  cat > /etc/docker/daemon.json <<EOF
+  {
+    "exec-opts": ["native.cgroupdriver=systemd"],
+    "log-driver": "json-file",
+    "log-opts": {
+      "max-size": "100m"
+    },
+    "storage-driver": "overlay2",
+    "storage-opts": [
+      "overlay2.override_kernel_check=true"
+    ]
+  }
+EOF
+
+  mkdir -p /etc/systemd/system/docker.service.d
+
+  # Restart docker
+  systemctl daemon-reload
+  systemctl restart docker
+  ## ---- END of CRI install/config
+
+  # Avoid sudo for vagrant user by adding to docker group
+  usermod -aG docker vagrant
+
+  ## ---- BEGIN kubernetes.io/docs/setup/independent/install-kubeadm:
+  # add yum repo for kubernetes
+  cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+exclude=kube*
+EOF
+
+  # Set SELinux in permissive mode (effectively disabling it)
+  setenforce 0
+  sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+
+  yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+
+  systemctl enable kubelet && systemctl start kubelet
+
+  # Apply these settings to the k8s.conf file to avoid errors in Kubeadm preflight checks
+  cat <<EOF > /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+EOF
+
+  # reload settings
+  sysctl --system
+  # ---- END kubeadm install
+
+  echo Disabling swap, for now
+  # kubelet requires swap off -- see "Installing kubeadm", "Before you begin"
+  swapoff -a
+
+  echo Disabling swap, forever
+  # keep swap off after reboot (insert '#' at start of any line containing 'swap'
+  # note: '\(' and '\)' define a remembered pattern, '\1' is the name of that pattern
+  # as such, any line with ' swap ' in it is prepended with a '#'
+  sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+
+  # note: ip and grep give a line containing "n.n.n.n/24", as second field
+  # awk selects the desired field, where cut trims away the trailing '/24' 
+  IP_ADDR=`ip addr show dev #{$hostAdapter} | grep -i "inet " | awk '{print $2}' | cut -f1 -d/`
+
+  # Our k8s VMs each have two network adapters, first one is NAT, 2nd is host-only
+  # Kubeadm assumes the first adapter is the one whose IP addr is to be used by K8s
+  # The NAT address is the same for all VMs, and will not work.
+  # As such, we must specify the host-only IP address for kubernetes to use
+  #
+  # set node-ip in the relevant kubelet file under /etc, then restart the kubelet
+  sudo sed -i "/^[^#]*KUBELET_EXTRA_ARGS=/c\KUBELET_EXTRA_ARGS=--node-ip=$IP_ADDR" #{$cfgKubelet}
+  sudo systemctl restart kubelet
+
+  # NFS client to be available everywhere:
+  sudo yum install -y nfs-utils
+
+  # Copy key-pair from host's project directory to vagrant user's .ssh directory on node
+  cp /vagrant/id_rsa /home/vagrant/.ssh
+  if [[ $? -ne 0 ]]; then
+    echo "ERROR: Error copying /vagrant/id_rsa key"
+  fi
+  cp /vagrant/id_rsa.pub /home/vagrant/.ssh
+  if [[ $? -ne 0 ]]; then
+    echo "ERROR: Error copying /vagrant/id_rsa key"
+  fi
+  chown $(id -u vagrant):$(id -g vagrant) /home/vagrant/.ssh/id_rsa
+  chown $(id -u vagrant):$(id -g vagrant) /home/vagrant/.ssh/id_rsa.pub
+  echo "vagrant private/public keys installed"
+SCRIPT
+# End CentOS Configuration Script
+
+# Generate script to build master nodes
+$configureMaster = <<SCRIPT
+  # install k8s master
+  echo "This is a Kubernetes master node"
+
+  # Fetch IP address of this box from the host network adapter info, as above
+  IP_ADDR=`ip addr show dev #{$hostAdapter} | grep -i "inet " | awk '{print $2}' | cut -f1 -d/`
+  echo "host adapter, #{$hostAdapter}, has address $IP_ADDR"
+
+  HOST_NAME=$(hostname -s)
+
+  echo "Running kubeadm init -- creating cluster"
+  cmd="kubeadm init --apiserver-advertise-address=$IP_ADDR #{$netCidr}"
+  echo "cmd: $cmd"
+  $cmd
+
+  sudo --user=vagrant mkdir -p /home/vagrant/.kube
+  cp -i /etc/kubernetes/admin.conf /home/vagrant/.kube/config
+  chown $(id -u vagrant):$(id -g vagrant) /home/vagrant/.kube/config
+
+  echo "Defined KUBECONFIG, which kubectl uses to obtain vital cluster information"
+  export KUBECONFIG=/etc/kubernetes/admin.conf
+
+  echo "Install network for our cluster"
+  if [[ #{$net} = "flannel" ]]; then
+    echo "net: #{$net}. installing flannel"
+    kubectl apply -f #{$flannel}
+  elif [[ #{$net} = "weave" ]]; then
+    echo "net: #{$net}. installing weave"
+
+    # Weave BUG workaround: by default, no route from nodes to master.
+    # Symptoms:
+    #   Nodes NotReady; weave pods in CrashLoopBackoff
+    #   Node logs show: "Failed to get peers" (kubectl logs -n kube-system -f weave-net-spx6g weave)
+    # One soln promoted online is to add a route to the master node, as we do here:
+
+    ## For Ubuntu, append a line to the end of /etc/network/interfaces, and restart the interface
+    #echo "      up ip route add 10.96.0.1/32 via #{$masterIp}" >>/etc/network/interfaces
+    #ifdown enp0s8 && ifup enp0s8
+
+    # For CentOS, add a file containing the desired route
+    echo "10.96.0.1 via #{$masterIp} dev eth1" >./route-eth1
+    sudo mv ./route-eth1 /etc/sysconfig/network-scripts/
+    sudo /etc/sysconfig/network-scripts/ifup-routes eth1
+
+    kubectl apply -f #{$weave}
+  elif [[ #{$net} = "calico" ]]; then
+    echo "net: #{$net}. installing calico"
+    kubectl apply -f #{$calico1}
+    kubectl apply -f #{$calico2}
+  elif [[ #{$net} = "canal" ]]; then
+    echo "net: #{$net}. installing canal"
+    kubectl apply -f #{$canal1}
+    kubectl apply -f #{$canal2}
+  elif [[ #{$net} = "romana" ]]; then
+    echo "net: #{$net}. installing romana"
+    kubectl apply -f #{$romana}
+  fi
+
+  # Generate join script to add nodes to cluster
+  echo "Generate a join script for the other nodes to run"
+  kubeadm token create --print-join-command >> /etc/kubeadm_join_cmd.sh
+  chmod +x /etc/kubeadm_join_cmd.sh
+
+  # Add the public key to vagrant user's authorized_keys file
+  echo "Append the vagrant user's public key to the authorized_keys file"
+  cat /home/vagrant/.ssh/id_rsa.pub >>/home/vagrant/.ssh/authorized_keys
+SCRIPT
+# End of script to build master nodes
+
+# Generate script to configure worker nodes
+$configureNode = <<SCRIPT
+  echo "I am a node, not a master"
+
+  if [[ #{$net} = "flannel" ]]; then
+    echo "net: #{$net}. "
+  elif [[ #{$net} = "romana" ]]; then
+    echo "net: #{$net}. "
+  elif [[ #{$net} = "weave" ]]; then
+    echo "net: #{$net}."
+
+    # Weave BUG workaround: by default, no route from nodes to master.
+    # Symptoms:
+    #   Nodes NotReady; weave pods in CrashLoopBackoff
+    #   Node logs show: "Failed to get peers" (kubectl logs -n kube-system -f weave-net-spx6g weave)
+    # One soln promoted online is to add a route to the master node, as we do here:
+
+    ## For Ubuntu, append a line to the end of /etc/network/interfaces, and restart the interface
+    #echo "      up ip route add 10.96.0.1/32 via #{$masterIp}" >>/etc/network/interfaces
+    #ifdown enp0s8 && ifup enp0s8
+
+    # For CentOS, add a file containing the desired route
+    echo "10.96.0.1 via #{$masterIp} dev eth1" >./route-eth1
+    sudo mv ./route-eth1 /etc/sysconfig/network-scripts/
+    sudo /etc/sysconfig/network-scripts/ifup-routes eth1
+  fi
+
+  echo "Copy join script from master node to local directory"
+  scp -i /home/vagrant/.ssh/id_rsa -o StrictHostKeyChecking=no vagrant@#{$masterIp}:/etc/kubeadm_join_cmd.sh .
+  echo "Run join script to join cluster"
+  sh ./kubeadm_join_cmd.sh
+SCRIPT
+# End of script to build worker nodes
+
+# Configure each VBox VM 
+Vagrant.configure("2") do |config|
+  servers.each do |opts|
+    config.vm.define opts[:name] do |config|
+      config.vm.box         = opts[:box]
+      config.vm.box_version = opts[:box_version]
+      config.vm.hostname    = opts[:name]
+      config.vm.network :private_network, ip: opts[:eth1]
+      config.vm.provider "virtualbox" do |v|
+        v.name = opts[:name]
+        v.customize ["modifyvm", :id, "--groups", "/Kubernetes #{$grpSuffix}"]
+        v.customize ["modifyvm", :id, "--memory",  opts[:mem]]
+        v.customize ["modifyvm", :id, "--cpus",    opts[:cpu]]
+      end
+
+      # base config
+      config.vm.provision "shell", inline: $configureCentos
+
+      # morph into master/worker nodes
+      if opts[:type] == "master"
+        config.vm.provision "shell", inline: $configureMaster
+      else
+        config.vm.provision "shell", inline: $configureNode
+      end
+
+      # stage some files from the host to /tmp on the node
+      config.vm.provision "file", source: "~/.profile", destination: "/tmp/.profile"
+      config.vm.provision "file", source: "~/.bashrc",  destination: "/tmp/.bashrc"
+      config.vm.provision "file", source: "~/.vimrc",   destination: "/tmp/.vimrc"
+
+      # Here, we apply a bit of "Ruby dust", fetching the USERNAME from the current environment,
+      # and passing that to our post-k8s script as an environment variable, NEWUSER, appearing
+      # in the shell we're spawning on each VM, the credentials of which will be installed,
+      # downloaded from the mounted project directory in /vagrant.
+      # Those credentials will allow our host user to ssh to the VMs.
+      config.vm.provision "shell", path: "post-k8s.sh", env: {"NEWUSER" => ENV['USERNAME']}
+    end
+  end
+end
