@@ -3,13 +3,13 @@
 #
 # As of early-Feb, 2019, this script creates a 3-node k8s cluster, with these versions:
 #   Kubernetes: 1.13.3                          (current version on kubernetes.io)
-#   Docker:     18.06.1                         (prescribed by kubernetes.io)
+#   Docker:     18.06.2                         (prescribed by kubernetes.io)
 #   Centos:     CentOS7,                        (prescribed by kubernetes.io))
-#      Version: version 1901.01                 (latest CentOS7 box from Vagrant)
+#     Version:  1901.01                         (latest CentOS7 box from Vagrant)
 #   Ubuntu:     Ubuntu/xenial64                 (prescribed by kubernetes.io)
-#     Version   20190204.3.0                    (latest Ubuntu Xenial box from Vagrant)
+#     Version   20190215.0.0                    (latest Ubuntu Xenial box from Vagrant)
 
-# Setup:
+# Setup (Linux and Windows hosts):
 #   1. Install VirtualBox and vagrant on your host system (my host is Ubuntu Bionic Beaver, which
 #      was used to test all of this
 #   2. Create a project directory; cd to the project directory
@@ -41,9 +41,68 @@
 #         CentOS cmaster IP is 192.168.205.15; worker node IPs immediately follow, i.e. cnode1 is 192.168.205.16
 #       - want more/fewer nodes? edit the relevant servers array, below.
 #   9. Install kubectl on your host system, per instructions on kubernetes.io
+#      One method (https://kubernetes.io/docs/tasks/tools/install-kubectl/):
+#        curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+#      Make it executable (chmod +x) and move to a preferred directory in your path, e.g. /usr/local/bin.
 #   10. To set the KUBECONFIG env var at any time, on any shell, "source" the script "setKubeConfigVar.sh".
 #   11. Only one context can be active at a time, across multiple shells.
 #   12. Select context via "kubectl config use-context <context-name>"
+#
+# WSL Notes (running these scripts on Windows 10's Linux environment):
+# All my development was performed on Ubuntu 18. I later ported it to Windows 10's WSL (bash) environment.
+# There were quite a number of changes required to get things working on Windows.
+# I suggest reviewing: https://www.vagrantup.com/docs/other/wsl.html
+#
+#   1. Install Windows version of VirtualBox
+#   2. Add VirtualBox binaries to system PATH
+#        System->Properties->Adv System Settings->Environment Variables...->System variables
+#      The VirtualBox path is typically c:\Program Files\Oracle\VirtualBox
+#   3. Install vagrant for Linux in bash.  I used 
+#        wget https://releases.hashicorp.com/vagrant/2.2.3/vagrant_2.2.3_x86_64.deb
+#      Then sudo apt-get install ./vagrant_2.2.3_x86_64.deb
+#      NOTE: apt update from Windows bash seems to give older version; I opted for the latest.
+#   4. vagrant projects don't work well from /home/xxx. Base your projects in /mnt/c/Users/<username>/whatever.
+#      The best way I've yet seen to do this from within a WSL bash environment is to create a symlink in
+#      a directory under your home directly, as suggested here:
+#        https://cepa.io/2018/02/20/linuxizing-your-windows-pc-part2/
+#      Let's make that more concrete:
+#        My username is <user>; $HOME is /home/<user>; my projects directory in Windows is
+#        C:\Users\<user>\<projects>, where my vagrant project folders live. Assume that we want to access 
+#        that directory from $HOME/<projects>. Use a symlink to accomplish this
+#        Make the vagrant project folders accessible from my $HOME directory:
+#          cd $HOME
+#          ln -s /mnt/c/Users/<user>/<projects> <projects>
+#        Set the root path to your vagrant projects by exporting this env var (and append to .bashrc):
+#          export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/<user>/<projects>
+#   5. export VAGRANT_WSL_ENABLE_WINDOWS_ACCESSS=1, and append to .bashrc
+#   6. To avoid rsync and vagrant ssh problems (e.g. "error when attempting to rsync a synced folder":
+#        export VAGRANT_HOME="/home/<user>/.vagrant.d"
+#      in Vagrantfile, add
+#        config.ssh.insert_key = false
+#   7. This problem with Ubuntu/Xenial: "rawfile#0 failed to create the raw output file VERR_PATH_NOT_FOUND"
+#      can be avoided by adding this line to the Vagrantfile:
+#        vb.customize [ 'modifyvm', :id, '--uartmode1', 'disconnected']
+#   8. C:\Windows\System32\drivers\etc\hosts file permissions -- user must have modify permission
+#      to avoid "Permission denied" for the vagrant hostsupdater plugin to work (it's not installed by
+#      VBox 5.2.x, but is in VBox 6.0
+#   9. no need to run as administrator -- neither bash, or VBox
+#   10. When this group of files is pulled down from github, they arrive as DOS-formatted files, which
+#      causes runtime errors.  Install and use dos2unix utility to modify the shell scripts, to good effect.
+#   11. Mounted Windows partitions, e.g. C:, may ignore permissions set, for example, by chmod. Correct this
+#       by re-mounting the volume, specifying "-o metadata", viz.:
+#        "sudo umount /mnt/c && sudo mount -t drvfs C: /mnt/c -o metadata"
+#       Also, the files in /mnt/c may all be owned by root. Adjust as needed.
+#       For more, see https://blogs.msdn.microsoft.com/commandline/2018/01/12/chmod-chown-wsl-improvements/
+#       Also: https://docs.microsoft.com/en-us/windows/wsl/wsl-config
+#   12. With permissions changes enabled from bash (via metadata), tighten any ssh key permissions to avoid
+#       problems: I set my keys as "chmod 644 id_rsa*"
+#   13. I've had problems with VMs (Xenial) booting extremely slowly with VBox 6.0, while v5.2.26 works great.
+#       see https://github.com/hashicorp/vagrant/issues/10578, for a discussion of this issue.
+#   14. Another VBox 6.0 issue: Centos cluster VMs don't come up under VBox 6.0 either -- the master node
+#       boots fine, but the next VM fails to spin up. I've not yet found similar reports from others.
+#   15. Side note on VBox 6.0: UAC will trigger when the hostupdater (a vagrant plugin) tries to update
+#       the hosts file. Not sure how necessary this plugin is -- installed on v6.0 by default, consider
+#       removing it via "vagrant plugin remove".
 #
 # Network Notes:
 #   calico  -- works out of the box
@@ -197,7 +256,7 @@ $configureCentos = <<SCRIPT
   yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 
   ## Install docker ce
-  yum update --setopt=deltarpm=0 -y && yum install -y docker-ce-18.06.1.ce
+  yum update --setopt=deltarpm=0 -y && yum install -y docker-ce-18.06.2.ce
 
   ## Create /etc/docker directory
   mkdir /etc/docker
@@ -410,6 +469,8 @@ SCRIPT
 
 # Configure each VBox VM 
 Vagrant.configure("2") do |config|
+  # suggested on stack overflow, 46150672, avoiding issue with WSL (not needed on Linux)
+  config.ssh.insert_key = false
   servers.each do |opts|
     config.vm.define opts[:name] do |config|
       config.vm.box         = opts[:box]
@@ -421,6 +482,9 @@ Vagrant.configure("2") do |config|
         v.customize ["modifyvm", :id, "--groups", "/Kubernetes #{$grpSuffix}"]
         v.customize ["modifyvm", :id, "--memory",  opts[:mem]]
         v.customize ["modifyvm", :id, "--cpus",    opts[:cpu]]
+        # The following avoids errors when WSL tries to open logfile when creating Ubuntu/Xenial
+        # (not needed if hosted on Linux -- only Windows, and only for Xenial VMs)
+        # v.customize ['modifyvm', :id, '--uartmode1', 'disconnected']
       end
 
       # base config
@@ -438,12 +502,12 @@ Vagrant.configure("2") do |config|
       config.vm.provision "file", source: "~/.bashrc",  destination: "/tmp/.bashrc"
       config.vm.provision "file", source: "~/.vimrc",   destination: "/tmp/.vimrc"
 
-      # Here, we apply a bit of "Ruby dust", fetching the USERNAME from the current environment,
+      # Here, we apply a bit of "Ruby dust", fetching the LOGNAME from the current environment,
       # and passing that to our post-k8s script as an environment variable, NEWUSER, appearing
       # in the shell we're spawning on each VM, the credentials of which will be installed,
       # downloaded from the mounted project directory in /vagrant.
       # Those credentials will allow our host user to ssh to the VMs.
-      config.vm.provision "shell", path: "post-k8s.sh", env: {"NEWUSER" => ENV['USERNAME']}
+      config.vm.provision "shell", path: "post-k8s.sh", env: {"NEWUSER" => ENV['LOGNAME']}
     end
   end
 end

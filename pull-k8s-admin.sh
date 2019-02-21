@@ -1,11 +1,11 @@
 #!/bin/bash
-# Given the IP address of a master node, and the current USERNAME,
+# Given the IP address of a master node, and the current LOGNAME,
 # fetch the cluster's admin.conf file,
 # copy the admin.conf file to the user's ~/.kube directory,
 # adding the project name to the config filename.
 #
 # e.g. my project directory is test1 (contains a Vagrantfile for my Kubernetes cluster)
-# the master node IP address is 172.1.2.3, and my $USERNAME is dave
+# the master node IP address is 172.1.2.3, and my $LOGNAME is dave
 #
 # This script downloads the admin.config file from the master node using dave's credentials
 # (which were previously installed on all nodes during "vagrant up", or by running "post-k8s.sh")
@@ -22,7 +22,7 @@ usage () {
   exit $1
 }
 
-echo "USERNAME: $USERNAME"
+echo "LOGNAME: $LOGNAME"
 
 while getopts s: opt; do
   case $opt in
@@ -52,6 +52,11 @@ else
   usage 1
 fi
 
+# NOTE: The following ssh-keygen commands work only if lines
+# have been added to the hosts file:
+#   Linux: /etc/hosts
+#   Windows: C:\Windows\System32\drivers\etc\hosts
+#
 # remove old host keys (Ubuntu)
 ssh-keygen -f ~/.ssh/known_hosts -R "master"
 ssh-keygen -f ~/.ssh/known_hosts -R "node1"
@@ -62,14 +67,11 @@ ssh-keygen -f ~/.ssh/known_hosts -R "cmaster"
 ssh-keygen -f ~/.ssh/known_hosts -R "cnode1"
 ssh-keygen -f ~/.ssh/known_hosts -R "cnode2"
 
-# If ssh gives error about an "Offending key" in known_hosts, use this to correct:
-#   sed -i '<n>d' ~/.ssh/known_hosts
-# replacing <n> with the number stated by ssh
-
+# Here, I've used hard-coded names from the Vagrantfiles
 if [[ "$os" = "centos" ]]; then
-  masterIp=192.168.205.15
+  master=cmaster
 else
-  masterIp=192.168.205.10
+  master=master
 fi
 
 # get the current project directory path, then strip away all but the last
@@ -77,5 +79,14 @@ dir="$(basename $(pwd))"
 echo "dir: $dir"
 
 # pull down the kubernetes admin.conf file from the new master node to the current directory
-scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $USERNAME@$masterIp:/home/$USERNAME/admin.conf .
+while true; do
+  scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $LOGNAME@$master:/home/$LOGNAME/admin.conf .
+  if [[ $? -eq 0 ]]; then
+    echo "scp attempt to pull admin.conf file gave no error"
+    break
+  else
+    echo "scp attempt to pull admin.conf file failed"
+    sleep 10
+  fi
+done
 
