@@ -6,12 +6,12 @@ After hammering out issues with WSL, I'm satisfied that that environment is as s
 native Ubuntu under which these scripts were developed.  That said, see notes below.
 
 As of mid-Feb, 2019, this script creates a 3-node k8s cluster, with these versions:
-  Kubernetes: 1.13.3                          (current version on kubernetes.io)
-  Docker:     18.06.2                         (prescribed by kubernetes.io)
-  Centos:     CentOS7,                        (prescribed by kubernetes.io))
-    Version:  1901.01                         (latest CentOS7 box from Vagrant)
-  Ubuntu:     Ubuntu/xenial64                 (prescribed by kubernetes.io)
-    Version   20190215.0.0                    (latest Ubuntu Xenial box from Vagrant)
+  - Kubernetes: 1.13.3                          (current version on kubernetes.io)
+  - Docker:     18.06.2                         (prescribed by kubernetes.io)
+  - Centos:     CentOS7,                        (prescribed by kubernetes.io))
+  -   Version:  1901.01                         (latest CentOS7 box from Vagrant)
+  - Ubuntu:     Ubuntu/xenial64                 (prescribed by kubernetes.io)
+  -   Version   20190215.0.0                    (latest Ubuntu Xenial box from Vagrant)
 
 Setup (Linux and Windows hosts):
   1. Install VirtualBox and vagrant on your host system (my host is Ubuntu Bionic Beaver, which
