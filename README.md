@@ -11,6 +11,7 @@ As of mid-Feb, 2019, this script creates a 3-node k8s cluster, with these versio
   - Docker:     18.06.2                         (prescribed by kubernetes.io)
   - Centos:     CentOS7,                        (prescribed by kubernetes.io))
   -   Version:  1901.01                         (latest CentOS7 box from Vagrant)
+  or
   - Ubuntu:     Ubuntu/xenial64                 (prescribed by kubernetes.io)
   -   Version   20190215.0.0                    (latest Ubuntu Xenial box from Vagrant)
 
@@ -21,7 +22,8 @@ Setup (Linux and Windows hosts):
   3. Run vagrant init
   4. Cluster network is calico, by default. To change, export an env var, $k8snet, setting it to
      one of: calico, canal, flannel, romana, weave
-  5. We assume kube config files are gathered together in a directory, ~/.kube/configd, on the host. 
+  5. We assume kube config files are gathered together in a directory, ~/.kube/configd, on the host. You'll get an
+     error if the directory does not exist, or another is not specified as an argument to makeK8s.sh.
   6. Pull the collection of files from github into the project directory:
        - makeK8s.sh (one script to rule them all, and in the darkness bind them (LOTR))
        - Vagrantfiles (Vagrantfile.centos and Vagrantfile.ubuntu -- one of which is copied to Vagrantfile at runtime.
@@ -49,50 +51,53 @@ Setup (Linux and Windows hosts):
      One method (https://kubernetes.io/docs/tasks/tools/install-kubectl/):
        curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
      Make it executable (chmod +x) and move to a preferred directory in your path, e.g. /usr/local/bin.
-  10. To set the KUBECONFIG env var at any time, on any shell, "source" the script "setKubeConfigVar.sh".
+  10. To set the KUBECONFIG env var at any time, on any shell, "source" the script "setKubeConfigVar.sh":
+        $ source ./setKubeConfigVar.sh
   11. Only one context can be active at a time, across multiple shells.
-  12. Select context via "kubectl config use-context <context-name>"
+  12. Select context via "kubectl config use-context <context-name>".
+  13. View configs via "kubectl config view".
   
 WSL Notes (running these scripts on Windows 10's Linux environment):
-All my development was performed on Ubuntu 18. I later ported it to Windows 10's WSL (bash) environment.
+My development and testing were initially performed on Ubuntu 18 (Bionic). I later ported it to 
+Windows 10's WSL (bash) environment (Ubuntu).
 There were quite a number of changes required to get things working on Windows.
-I suggest reviewing: https://www.vagrantup.com/docs/other/wsl.html
+I've tried to capture all necessary steps here. I suggest reviewing: https://www.vagrantup.com/docs/other/wsl.html.
+Replace <user> with your preferred host user account. Replace <projects> with a directory of your choosing.
 
-  1. Install Windows version of VirtualBox
+  1. Install Windows version of VirtualBox -- 5.2.x.  VBox 6.0 gave me headaches that could be resolved.
   2. Add VirtualBox binaries to system PATH
        System->Properties->Adv System Settings->Environment Variables...->System variables
      The VirtualBox path is typically c:\Program Files\Oracle\VirtualBox
-  3. Install vagrant for Linux in bash.  I used 
+  3. Install vagrant for Linux in WSL bash.  I used 
        wget https://releases.hashicorp.com/vagrant/2.2.3/vagrant_2.2.3_x86_64.deb
-     Then sudo apt-get install ./vagrant_2.2.3_x86_64.deb
+     Then sudo apt-get install ./vagrant_2.2.3_x86_64.deb (because Ubuntu is Debian-based, and uses apt).
      NOTE: apt update from Windows bash seems to give older version; I opted for the latest.
-  4. vagrant projects don't work well from /home/xxx. Base your projects in /mnt/c/Users/<username>/whatever.
-     The best way I've yet seen to do this from within a WSL bash environment is to create a symlink in
-     a directory under your home directly, as suggested here:
+  4. vagrant projects don't work well from /home/<user>. Base your projects in, for example, /mnt/c/Users/<user>/projects,
+     but use a symlink in a directory under your home directly, as suggested here:
        https://cepa.io/2018/02/20/linuxizing-your-windows-pc-part2/
      Let's make that more concrete:
        My username is <user>; $HOME is /home/<user>; my projects directory in Windows is
        C:\Users\<user>\<projects>, where my vagrant project folders live. Assume that we want to access 
-       that directory from $HOME/<projects>. Use a symlink to accomplish this
+       that directory from $HOME/<projects>. Use a symlink to accomplish this.
        Make the vagrant project folders accessible from my $HOME directory:
          cd $HOME
          ln -s /mnt/c/Users/<user>/<projects> <projects>
-       Set the root path to your vagrant projects by exporting this env var (and append to .bashrc):
+       Set the root path to your vagrant projects directory by exporting this env var (and append to .bashrc):
          export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/<user>/<projects>
   5. export VAGRANT_WSL_ENABLE_WINDOWS_ACCESSS=1, and append to .bashrc
   6. To avoid rsync and vagrant ssh problems (e.g. "error when attempting to rsync a synced folder":
        export VAGRANT_HOME="/home/<user>/.vagrant.d"
      in Vagrantfile, add
        config.ssh.insert_key = false
-  7. This problem with Ubuntu/Xenial: "rawfile#0 failed to create the raw output file VERR_PATH_NOT_FOUND"
-     can be avoided by adding this line to the Vagrantfile:
+  7. There is a problem with Ubuntu/Xenial on VM spinup: "rawfile#0 failed to create the raw output file VERR_PATH_NOT_FOUND".
+     The error can be avoided by adding this line to the Vagrantfile:
        vb.customize [ 'modifyvm', :id, '--uartmode1', 'disconnected']
   8. C:\Windows\System32\drivers\etc\hosts file permissions -- user must have modify permission
      to avoid "Permission denied" for the vagrant hostsupdater plugin to work (it's not installed by
-     VBox 5.2.x, but is in VBox 6.0
+     VBox 5.2.x, but is in VBox 6.0.
   9. no need to run as administrator -- neither bash, or VBox
-  10. When this group of files is pulled down from github, they arrive as DOS-formatted files, which
-     causes runtime errors.  Install and use dos2unix utility to modify the shell scripts, to good effect.
+  10. When this group of files is pulled down from github, they may arrive as DOS-formatted files, which
+     causes runtime errors.  Install and use dos2unix utility to modify the shell scripts, to correct.
   11. Mounted Windows partitions, e.g. C:, may ignore permissions set, for example, by chmod. Correct this
       by re-mounting the volume, specifying "-o metadata", viz.:
        "sudo umount /mnt/c && sudo mount -t drvfs C: /mnt/c -o metadata"
@@ -110,7 +115,7 @@ I suggest reviewing: https://www.vagrantup.com/docs/other/wsl.html
       removing it via "vagrant plugin remove".
 
 Network Notes:
-  - calico:    works out of the box
+  - calico:    works out of the box. Sweet!
   - weave:     works, but worker nodes require a static route to the master node.
   - romana:    works, but seems to require romana-agent daemonset tolerance for not-ready nodes
   - flannel:   works, but its yaml must be tweaked to use enp0s8(Ubuntu) or eth1(CentOS) host-only interface, not the NAT'd one
