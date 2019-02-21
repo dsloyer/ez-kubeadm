@@ -103,7 +103,7 @@
 #   15. Side note on VBox 6.0: UAC will trigger when the hostupdater (a vagrant plugin) tries to update
 #       the hosts file. Not sure how necessary this plugin is -- installed on v6.0 by default, consider
 #       removing it via "vagrant plugin remove".
-
+#
 # Network Notes:
 #   calico  -- works out of the box
 #   weave   -- works, but worker nodes require a static route to the master node.
@@ -239,6 +239,7 @@ servers = [
 ]
 
 # Configure Ubuntu boxes
+# Each VM will be configured using this script, whether kubernetes master, or merely a node
 $configureUbuntu = <<SCRIPT
   # ---- BEGIN CRI (container runtime interface) install.
   # See kubernetes.io/docs/setup/docs/cri. Versions are prescribed
@@ -476,14 +477,14 @@ Vagrant.configure("2") do |config|
       config.vm.box_version = opts[:box_version]
       config.vm.hostname    = opts[:name]
       config.vm.network :private_network, ip: opts[:eth1]
-      config.vm.provider "virtualbox" do |v|
-        v.name = opts[:name]
-        v.customize ["modifyvm", :id, "--groups", "/Kubernetes #{$grpSuffix}"]
-        v.customize ["modifyvm", :id, "--memory",  opts[:mem]]
-        v.customize ["modifyvm", :id, "--cpus",    opts[:cpu]]
+      config.vm.provider "virtualbox" do |vb|
+        vb.name = opts[:name]
+        vb.customize ["modifyvm", :id, "--groups", "/Kubernetes #{$grpSuffix}"]
+        vb.customize ["modifyvm", :id, "--memory",  opts[:mem]]
+        vb.customize ["modifyvm", :id, "--cpus",    opts[:cpu]]
         # The following avoids errors when WSL tries to open logfile when creating Ubuntu/Xenial
-        # (not needed if hosted on Linux -- only Windows, and only for Xenial VMs)
-        v.customize ['modifyvm', :id, '--uartmode1', 'disconnected']
+        # (not needed if hosted on Linux -- only Windows)
+        vb.customize ['modifyvm', :id, '--uartmode1', 'disconnected']
       end
 
       # base config
