@@ -109,11 +109,11 @@ I suggest reviewing: https://www.vagrantup.com/docs/other/wsl.html
       removing it via "vagrant plugin remove".
 
 Network Notes:
-  calico:    works out of the box
-  weave:     works, but worker nodes require a static route to the master node.
-  romana:    works, but seems to require romana-agent daemonset tolerance for not-ready nodes
-  flannel:   works, but its yaml must be tweaked to use enp0s8(Ubuntu) or eth1(CentOS) host-only interface, not the NAT'd one
-  canal      works, but its yaml must be tweaked to use enp0s8(Ubuntu) or eth1(CentOS) host-only interface, not the NAT'd one
+  - calico:    works out of the box
+  - weave:     works, but worker nodes require a static route to the master node.
+  - romana:    works, but seems to require romana-agent daemonset tolerance for not-ready nodes
+  - flannel:   works, but its yaml must be tweaked to use enp0s8(Ubuntu) or eth1(CentOS) host-only interface, not the NAT'd one
+  - canal      works, but its yaml must be tweaked to use enp0s8(Ubuntu) or eth1(CentOS) host-only interface, not the NAT'd one
 
 SSH key handling
 
