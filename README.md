@@ -1,5 +1,6 @@
-ez-kubeadm: Bash scripts, Vagrantfiles, YAML to easily create multi-node kubernetes clusters via vagrant/VBox
- from Ubuntu/CentOS, using network of your choice (calico, canal, flannel, romana, weave).
+ez-kubeadm: Bash scripts, Vagrantfiles, YAML to easily create multi-node kubernetes clusters on a Windows or Linux-based
+host via vagrant/VBox.  Select whether nodes are Ubuntu or CentOS via runtime parameter.  CNI network is selected via environment
+variable -- one of {calico, canal, flannel, romana, weave}.
 
 I've had several issues with VirtualBox 6.0 -- I very-much recommend using 5.2.26, at this time.
 After hammering out issues with WSL, I'm satisfied that that environment is as satisfying as the
