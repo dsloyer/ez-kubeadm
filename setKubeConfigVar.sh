@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cfgdir=$HOME/.kube/configd
+cfgdir=$HOME/.kube/config.d
 
 unset KUBECONFIG
 if [[ -f $cfgdir ]]; then
