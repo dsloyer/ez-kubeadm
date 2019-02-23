@@ -37,7 +37,7 @@ As of mid-Feb, 2019, this script creates a 3-node k8s cluster, with these versio
   3. Run vagrant init
   4. Cluster network is calico, by default. To change, export an env var, $k8snet, setting it to
      one of: calico, canal, flannel, romana, weave
-  5. We assume kube config files are gathered together in a directory, ~/.kube/configd, on the host. You'll get an
+  5. We assume kube config files are gathered together in a directory, ~/.kube/config.d, on the host. You'll get an
      error if the directory does not exist, or another is not specified as an argument to makeK8s.sh.
   6. Pull the collection of files from github into the project directory:
        * makeK8s.sh (one script to rule them all, and in the darkness bind them (LOTR))
