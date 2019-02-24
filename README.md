@@ -27,8 +27,8 @@ master   Ready    master   10m     v1.13.3
 node1    Ready    <none>   7m12s   v1.13.3
 node2    Ready    <none>   2m28s   v1.13.3
 
-... with the nodes added to /etc/hosts (manually), and my public key installed (by makeK8s.sh) on all nodes,
-    I can easily ssh to nodes by name, and from any directory on my host:
+... with the nodes manually added to /etc/hosts (or C:\Windows\System32\drivers\etc\hosts), and my public key
+    installed (by makeK8s.sh) on all nodes, I can easily ssh to nodes by name, and from any directory on my host:
 
 $ cd ~/test
 $ ssh master
