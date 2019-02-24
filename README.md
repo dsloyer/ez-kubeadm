@@ -6,15 +6,61 @@ variable -- one of {calico, canal, flannel, romana, weave}.
 Following forking the repository, installation of applications, directory creation, and setting env variables, a complete
 Kubernetes cluster based on Ubuntu, with Calico networking, can be built with a single command in the vagrant project directory:
 
+Assuming you've downloaded the ez-kubeadm files in ~/projects/ez-kubeadm, and are cd'd into ~/projects, these are the commands to build a working Ubuntu-based cluster in ~/projects/kube in 10-15 minutes:
+
 ```
-$ source ./makeK8s.sh -ubuntu
+$ cd ~/projects
+$ mkdir kube
+$ cd kube
+$ vagrant init
+$ cp ../ez-kubeadm/* .
+$ cp ~/.ssh/id_rsa.pub id_rsa.pub.$LOGNAME
+$ source ./makeK8s.sh -s ubuntu
+
+... a couple of thousand lines of text, and 15 minutes, later...
+
+$ kubectl config use-context kube
+Switched to context "kube".
+$ kubectl get nodes
+NAME     STATUS   ROLES    AGE     VERSION
+master   Ready    master   10m     v1.13.3
+node1    Ready    <none>   7m12s   v1.13.3
+node2    Ready    <none>   2m28s   v1.13.3
+
+... with the nodes added to /etc/hosts (manually), and my public key installed (by makeK8s.sh) on all nodes,
+    I can easily ssh to nodes by name, and from any directory on my host:
+
+$ cd ~/test
+$ ssh master
+Warning: Permanently added the ECDSA host key for IP address '192.168.205.10' to the list of known hosts.
+Welcome to Ubuntu 16.04.6 LTS (GNU/Linux 4.4.0-142-generic x86_64)
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+  Get cloud support with Ubuntu Advantage Cloud Guest:
+    http://www.ubuntu.com/business/services/cloud
+
+0 packages can be updated.
+0 updates are security updates.
+
+New release '18.04.2 LTS' available.
+Run 'do-release-upgrade' to upgrade to it.
+
+*** System restart required ***
+To run a command as administrator (user "root"), use "sudo <command>".
+See "man sudo_root" for details.
+
+username@master:~$
+```
+Destroy the cluster by cd'ing into the project folder for the cluster, then run:
+```
+$ vagrant destroy -f
 ```
 
 To use CentOS and Flannel instead:
-
 ```
 $ export k8snet=flannel
-$ source ./makeK8s.sh -centos
+$ source ./makeK8s.sh -s centos
 ```
 
 I've had several issues with VirtualBox 6.0 -- I strongly recommend using 5.2.26 at this time.
@@ -46,8 +92,8 @@ As of mid-Feb, 2019, this script creates a 3-node k8s cluster, with these versio
        * pull-k8s-admin.sh (download admin.conf from master, for use on host)
        * modKubeConfigFile.sh (process admin.conf file, for 
        * setKubeConfigVar.sh (consolidate multi-cluster configs into KUBECONFIG env var)
-       * copy public key for a desired host user account. E.g., I am dsloyer on my host, and want to ssh
-         to any node as dsloyer. I copy my id_rsa.pub file into the vagrant project directory, for scripted
+       * copy public key for a desired host user account. E.g., I am on my host, and want to ssh
+         to any node as <username>. I copy my id_rsa.pub file into the vagrant project directory, for scripted
          install on nodes
 
        Network files (tweaked for vagrant/VBox, Ubuntu and CentOS).
@@ -156,6 +202,7 @@ Replace <user> with your preferred host user account. Replace <projects> with a 
       removing it via "vagrant plugin remove".
 
 ## Network Notes:
+These all work -- feel free to use any of them.  Any quirks have been addressed in the Vagrantfiles and YAML:
   * calico:    Simply works.
   * weave:     Worker nodes require a static route to the master node.
   * romana:    Seems to require romana-agent daemonset tolerance for not-ready nodes
@@ -177,3 +224,4 @@ Thankfully, the project directory is automatically mounted onto each node by Vag
 Therefore, the SSH keys of interest are accessible by all our Vagrant VMs, at that location.
 I should add, however, that the contents of that directory are not well-synced, so changes to contents
 of files in /vagrant often go unseen, and may be lost. It's not a file server!
+
