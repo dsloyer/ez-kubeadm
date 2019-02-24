@@ -109,6 +109,7 @@ As of mid-Feb, 2019, this script creates a 3-node k8s cluster, with these versio
        nodes that are not-ready (applied to the romana-agent daemonset YAML).
   7. Run "source ./makeK8s.sh -s ubuntu", or "source ./makeK8s.sh -s centos" to create a new cluster
   8. Edits to the Vagrantfile should only be needed to:
+      * change the memory or CPU settings for the nodes
       * change master and worker node IP addresses.
         Ubuntu master IP is 192.168.205.10; worker node IPs immediately follow, i.e. node1 is 192.168.205.11
         CentOS cmaster IP is 192.168.205.15; worker node IPs immediately follow, i.e. cnode1 is 192.168.205.16
