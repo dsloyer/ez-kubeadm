@@ -1,0 +1,10 @@
+# ignore tmp files
+*.tmp
+
+# ignore ssh files
+id_rsa*
+*.crt
+*.key
+
+# ignore kubeadm-generated config file
+admin.conf
