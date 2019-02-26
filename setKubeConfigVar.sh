@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ "$_" = "${BASH_SOURCE}" ]; then
+  printf 'ERROR: Source this script; do not execute.\n' >&2
+  exit 1
+fi
+
 cfgdir=$HOME/.kube/config.d
 
 unset KUBECONFIG
