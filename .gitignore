@@ -1,10 +1,8 @@
-
-
 # ignore tmp files
 *.tmp
 
 # ignore ssh files
-id_rsa*.*
+id_rsa*
 *.crt
 *.key
 
