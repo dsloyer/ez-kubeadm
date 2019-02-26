@@ -5,6 +5,11 @@
 # echo "I was given $# argument(s):"
 # printf "%s\n" "$@"
 
+if [ "$_" = "${BASH_SOURCE}" ]; then
+  printf 'ERROR: Source this script; do not execute.\n' >&2
+  exit 1
+fi
+
 usage () {
   echo "usage: source ./makeK8s -s centos | ubuntu" >&2
   read x
