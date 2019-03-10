@@ -6,18 +6,18 @@ variable -- one of {calico, canal, flannel, romana, weave}.
 Following forking the repository, installation of applications, directory creation, and setting env variables, a complete
 Kubernetes cluster based on Ubuntu, with Calico networking, can be built with a single command in the vagrant project directory:
 
-Assuming you've downloaded the ez-kubeadm files in ~/projects/ez-kubeadm, these are the commands to build a working Ubuntu-based
-cluster in ~/projects/kube in about 10 minutes, or so.
+Assuming you've downloaded the ez-kubeadm files in $HOME/projects/ez-kubeadm, these are the commands to build a working
+Ubuntu-based cluster in $HOME/projects/kube in about 10 minutes, or so.
 
 ```
-$ cd ~/projects
+$ cd $HOME/projects
 $ mkdir kube && cd kube
 $ vagrant init
 $ cp ../ez-kubeadm/* .
-$ cp ~/.ssh/id_rsa.pub id_rsa.pub.$LOGNAME
+$ cp $HOME/.ssh/id_rsa.pub id_rsa.pub.$LOGNAME
 $ source ./makeK8s.sh -s ubuntu
 
-... a couple of thousand lines of text, and 15 minutes, later...
+... a couple of thousand lines of text, and 10-15 minutes later...
 
 $ kubectl config use-context kube
 Switched to context "kube".
@@ -30,7 +30,7 @@ node2    Ready    <none>   2m28s   v1.13.3
 ... with the nodes manually added to /etc/hosts (or C:\Windows\System32\drivers\etc\hosts), and my public key
     installed (by makeK8s.sh) on all nodes, I can easily ssh to nodes by name, and from any directory on my host:
 
-$ cd ~/test
+$ cd $HOME/test
 $ ssh master
 Warning: Permanently added the ECDSA host key for IP address '192.168.205.10' to the list of known hosts.
 Welcome to Ubuntu 16.04.6 LTS (GNU/Linux 4.4.0-142-generic x86_64)
@@ -50,7 +50,7 @@ Run 'do-release-upgrade' to upgrade to it.
 To run a command as administrator (user "root"), use "sudo <command>".
 See "man sudo_root" for details.
 
-username@master:~$
+username@master: $
 ```
 Destroy the cluster by cd'ing into the project folder for the cluster, then run:
 ```
@@ -108,7 +108,7 @@ As of mid-Mar, 2019, this script creates a 3-node k8s cluster, with these versio
        but the nodes can only become ready when romana-agent is up and running. My solution: add tolerance for
        nodes that are not-ready (applied to the romana-agent daemonset YAML).
   7. Run "source ./makeK8s.sh -s ubuntu", or "source ./makeK8s.sh -s centos" to create a new cluster
-  8. Edits to the Vagrantfile should only be needed to:
+  8. Edits to the Vagrantfile (Vagrantfile.ubuntu or Vagrantfile.centos) should only be needed to:
       * change the memory or CPU settings for the nodes
       * change master and worker node IP addresses.
         Ubuntu master IP is 192.168.205.10; worker node IPs immediately follow, i.e. node1 is 192.168.205.11
@@ -155,8 +155,9 @@ Replace <user> with your preferred host user account. Replace <projects> with a 
      Then
        sudo apt-get install ./vagrant_2.2.3_x86_64.deb
      NOTE: apt update from Windows bash seems to give older version; I opted for the latest, from hashicorp.
-  4. vagrant projects don't work well from /home/<user>. Base your projects in, for example, /mnt/c/Users/<user>/projects,
-     but use a symlink in a directory under your home directly, as suggested here:
+  4. Update your WSL environment -- vagrant projects don't work well from /home/<user>. I suggest basing
+     your projects in, for example, /mnt/c/Users/<user>/projects, but use a symlink in a directory under your
+     home directly, as suggested here:
        https://cepa.io/2018/02/20/linuxizing-your-windows-pc-part2/
      Let's make that more concrete:
        My username is dsloyer; $HOME is /home/dsloyer; my projects directory in Windows is
@@ -167,17 +168,17 @@ Replace <user> with your preferred host user account. Replace <projects> with a 
        cd $HOME
        ln -s /mnt/c/Users/dsloyer/projects projects
        ```
-  5. export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH, and append to .bashrc
+  4.1. export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH, and append to .bashrc
        Set the root path to your vagrant projects directory by exporting this env var (and append to .bashrc):
        ```
-       export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/<user>/<projects>
+       export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/dsloyer/projects
        ```
-  6. export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1, and append to .bashrc
+  4.2 export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS, and append to .bashrc
      ```
      export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1
-     echo "export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1" >>~/.bashrc
+     echo "export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1" >>$HOME/.bashrc
      ```
-  7. To avoid rsync and vagrant ssh problems (e.g. "error when attempting to rsync a synced folder":
+  4.3 To avoid rsync and vagrant ssh problems (e.g. "error when attempting to rsync a synced folder":
      ```
      export VAGRANT_HOME="/home/dsloyer/.vagrant.d"
      ```
