@@ -28,27 +28,26 @@ NAME     STATUS   ROLES    AGE     VERSION
 master   Ready    master   5m41s   v1.13.4
 node1    Ready    <none>   3m8s    v1.13.4
 node2    Ready    <none>   21s     v1.13.4                                                                             
+
 ```
-Now, with the nodes manually added to /etc/hosts (or C:\Windows\System32\drivers\etc\hosts), and my public key
-    installed on all nodes, I can easily ssh to nodes by name, and from any directory on my host:
+Let's change directory, spin up a BusyBox container on each node, then ssh to the master node:
 ```
 $ cd $HOME/test
-```
-Let's spin up a BusyBox container on each node, as a simple test:
-```
 $ kubectl create -f ds-bb.yaml
 daemonset.apps/bb created
-$ kubectl get po 
-NAME       READY   STATUS    RESTARTS   AGE
-bb-f77cg   1/1     Running   0          2m2s
-bb-r4blj   1/1     Running   0          87s
-bb-tzhtl   1/1     Running   0          2m2s
 
 $ ssh master
-Warning: Permanently added the ECDSA host key for IP address '192.168.205.10' to the list of known hosts.
+The authenticity of host 'master (192.168.205.10)' can't be established.
+ECDSA key fingerprint is SHA256:lHvDa0Gg2wnjGeD7rmXWw5ltSGzc8OCnewi9xJpDfXE.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added 'master' (ECDSA) to the list of known hosts.
 Welcome to Ubuntu 16.04.6 LTS (GNU/Linux 4.4.0-142-generic x86_64)
---- misc text removed ---
-username@master: $
+--- some text removed ---
+username@master:~$ kubectl get po
+NAME       READY   STATUS    RESTARTS   AGE
+bb-f77cg   1/1     Running   0          17m
+bb-r4blj   1/1     Running   0          17m
+bb-tzhtl   1/1     Running   0          17m
 ```
 Destroy the cluster by cd'ing into the project folder for the cluster, then run:
 ```
