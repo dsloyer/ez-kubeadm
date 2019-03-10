@@ -12,7 +12,7 @@ if [ "$_" = "${BASH_SOURCE}" ]; then
 fi
 
 usage () {
-  echo "usage: source ./makeK8s -s centos | ubuntu" >&2
+  echo "usage: source ./makeK8s [-s centos | ubuntu]" >&2
   read x
 }
 
