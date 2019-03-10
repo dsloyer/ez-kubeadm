@@ -43,7 +43,6 @@ NAME       READY   STATUS    RESTARTS   AGE
 bb-f77cg   1/1     Running   0          2m2s
 bb-r4blj   1/1     Running   0          87s
 bb-tzhtl   1/1     Running   0          2m2s
-```
 
 $ ssh master
 Warning: Permanently added the ECDSA host key for IP address '192.168.205.10' to the list of known hosts.
