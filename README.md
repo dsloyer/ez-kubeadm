@@ -174,34 +174,34 @@ Replace <user> with your preferred host user account. Replace <projects> with a 
        cd $HOME
        ln -s /mnt/c/Users/dsloyer/projects projects
        ```
-  4.1. export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH, and append to .bashrc
+  * export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH, and append to .bashrc
        Set the root path to your vagrant projects directory by exporting this env var (and append to .bashrc):
        ```
        export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/dsloyer/projects
        ```
-  4.2 export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS, and append to .bashrc
+  * export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS, and append to .bashrc
      ```
      export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1
      echo "export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1" >>$HOME/.bashrc
      ```
-  4.3 To avoid rsync and vagrant ssh problems (e.g. "error when attempting to rsync a synced folder":
+  * To avoid rsync and vagrant ssh problems (e.g. "error when attempting to rsync a synced folder":
      ```
      export VAGRANT_HOME="/home/dsloyer/.vagrant.d"
      ```
      Note: In Vagrantfile, I've added this line to avoid another rsync issue: config.ssh.insert_key = false
-  8. There is a problem with some Ubuntu box versions on VM spinup:
+  5. There is a problem with some Ubuntu box versions on VM spinup:
         "rawfile#0 failed to create the raw output file VERR_PATH_NOT_FOUND".
      The error can be avoided by adding this line to the Vagrantfile:
        ```
        vb.customize [ 'modifyvm', :id, '--uartmode1', 'disconnected']
        ```
-  9. C:\Windows\System32\drivers\etc\hosts file permissions -- user must have modify permission
+  6. C:\Windows\System32\drivers\etc\hosts file permissions -- user must have modify permission
      to avoid "Permission denied" for the vagrant hostsupdater plugin to work (it's not installed by
      VBox 5.2.x, but is in VBox 6.0.)
-  10. I've observed no need to run as administrator -- neither bash, or VBox Manager
-  11. When this group of files is pulled down from github, they may arrive as DOS-formatted files, which
+  7. I've observed no need to run as administrator -- neither bash, or VBox Manager
+  8. When this group of files is pulled down from github, they may arrive as DOS-formatted files, which
      causes runtime errors.  Install and use dos2unix utility to modify the shell scripts, to correct.
-  12. Mounted Windows partitions, e.g. C:, may ignore permissions set, for example, by chmod. Correct this
+  9. Mounted Windows partitions, e.g. C:, may ignore permissions set, for example, by chmod. Correct this
       by re-mounting the volume, specifying "-o metadata", viz.:
       ```
        $ sudo umount /mnt/c && sudo mount -t drvfs C: /mnt/c -o metadata
@@ -209,13 +209,13 @@ Replace <user> with your preferred host user account. Replace <projects> with a 
       Also, the files in /mnt/c may all be owned by root. Adjust as needed.
       For more, see https://blogs.msdn.microsoft.com/commandline/2018/01/12/chmod-chown-wsl-improvements/
       Also: https://docs.microsoft.com/en-us/windows/wsl/wsl-config
-  13. With permissions changes enabled from bash (via metadata), tighten any ssh key permissions to avoid
+  10. With permissions changes enabled from bash (via metadata), tighten any ssh key permissions to avoid
       problems: I set my keys as "chmod 644 id_rsa*"
-  14. I've had problems with VMs (Xenial) booting extremely slowly with VBox 6.0, while v5.2.26 works great.
+  11. I've had problems with VMs (Xenial) booting extremely slowly with VBox 6.0, while v5.2.26 works great.
       see https://github.com/hashicorp/vagrant/issues/10578, for a discussion of this issue.
-  15. Another VBox 6.0 issue: Centos cluster VMs don't come up under VBox 6.0 either -- the master node
+  12. Another VBox 6.0 issue: Centos cluster VMs don't come up under VBox 6.0 either -- the master node
       boots fine, but the next VM (cnode1) fails to spin up.
-  16. Side note on VBox 6.0: Windows UAC will trigger when the hostupdater (a vagrant plugin) tries to update
+  13. Side note on VBox 6.0: Windows UAC will trigger when the hostupdater (a vagrant plugin) tries to update
       the hosts file.
  
 ## Network Notes:
