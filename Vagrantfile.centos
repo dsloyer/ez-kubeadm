@@ -5,9 +5,9 @@
 #   Kubernetes: 1.13.3                          (current version on kubernetes.io)
 #   Docker:     18.06.2                         (prescribed by kubernetes.io)
 #   Centos:     CentOS7,                        (prescribed by kubernetes.io))
-#     Version:  1901.01                         (latest CentOS7 box from Vagrant)
+#     Version:  1902.01                         (latest CentOS7 box from Vagrant)
 #   Ubuntu:     Ubuntu/xenial64                 (prescribed by kubernetes.io)
-#     Version   20190221.0.0                    (latest Ubuntu Xenial box from Vagrant)
+#     Version   20190308.0.0                    (latest Ubuntu Xenial box from Vagrant)
 
 # Setup (Linux and Windows hosts):
 #   1. Install VirtualBox and vagrant on your host system (my host is Ubuntu Bionic Beaver, which
@@ -158,7 +158,7 @@ end
 # Box-specific settings
 $grpSuffix   = " - Centos"
 $box         = "centos/7"
-$boxVer      = "1901.01"
+$boxVer      = "1902.01"
 $hostAdapter = "eth1"
 
 # Set the desired IP address of the master node, from which node IPs will follow
