@@ -79,7 +79,7 @@ As of mid-March, 2019, this script creates a 3-node k8s cluster, with these vers
   2. Create a project directory; cd to the project directory
   3. Run vagrant init
   4. Cluster network is calico, by default. To change, export an env var, $k8snet, setting it to
-     one of: calico, canal, flannel, romana, weave
+     one of: calico, canal, flannel, romana, weave. No efforts should be necessary to use any supported network.
   5. We assume kube config files are gathered together in a directory, ~/.kube/config.d, on the host. You'll get an
      error if the directory does not exist, or another is not specified as an argument to makeK8s.sh.
   6. Pull the collection of files from github into the project directory:
@@ -94,7 +94,8 @@ As of mid-March, 2019, this script creates a 3-node k8s cluster, with these vers
          install on nodes
 
        Network files (tweaked for vagrant/VBox, Ubuntu and CentOS).
-       Calico and Weave need no YAML mods. Weave, however, requires a route to be set for worker nodes to find the master.
+       Calico and Weave need no YAML mods.
+       Weave, however, requires a route to be set for worker nodes to find the master (corrected in Vagrantfile).
        Canal, Flannel, and Romana require minor mods their YAML; e.g. use 2nd network adapter (enp0s8/eth1).
        The modified YAML files are included in this repository. They are:
        * canal2.yaml, canal2c.yaml (canal2 for Ubuntu, canal2c for CentOS),
@@ -213,15 +214,14 @@ Replace <user> with your preferred host user account. Replace <projects> with a 
   14. I've had problems with VMs (Xenial) booting extremely slowly with VBox 6.0, while v5.2.26 works great.
       see https://github.com/hashicorp/vagrant/issues/10578, for a discussion of this issue.
   15. Another VBox 6.0 issue: Centos cluster VMs don't come up under VBox 6.0 either -- the master node
-      boots fine, but the next VM fails to spin up. I've not yet found similar reports from others.
-  16. Side note on VBox 6.0: UAC will trigger when the hostupdater (a vagrant plugin) tries to update
-      the hosts file. Not sure how necessary this plugin is -- installed on v6.0 by default, consider
-      removing it via "vagrant plugin remove".
-
+      boots fine, but the next VM (cnode1) fails to spin up.
+  16. Side note on VBox 6.0: Windows UAC will trigger when the hostupdater (a vagrant plugin) tries to update
+      the hosts file.
+ 
 ## Network Notes:
 These all seem to work well -- feel free to use any of them.  Any quirks have been addressed in the Vagrantfiles and YAML:
   * calico:    Simply works.
-  * weave:     Worker nodes require a static route to the master node.
+  * weave:     Worker nodes require a static route to the master node (applied by Vagrantfile)
   * romana:    Seems to require romana-agent daemonset tolerance for not-ready nodes
   * flannel:   Its yaml must be tweaked to use enp0s8(Ubuntu) or eth1(CentOS) host-only interface, not the NAT'd one
   * canal      Its yaml must be tweaked to use enp0s8(Ubuntu) or eth1(CentOS) host-only interface, not the NAT'd one
@@ -240,4 +240,5 @@ On the master, we also need to add the vagrant pub-key into the master's authori
 Thankfully, the project directory is automatically mounted onto each node by Vagrant, at /vagrant.
 Therefore, the SSH keys of interest are accessible by all our Vagrant VMs, at that location.
 I should add, however, that the contents of that directory are not well-synced, so changes to contents
-of files in /vagrant often go unseen, and may be lost. It's not a file server!
+of files in /vagrant often go unseen, and may be lost.
+NOTE: The mount is only automatic during node creation, and must be re-mounted manually if the node reboots.
