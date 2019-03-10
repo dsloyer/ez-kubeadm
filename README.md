@@ -1,55 +1,54 @@
-# ez-kubeadm
-Bash scripts, Vagrantfiles, YAML to easily create multi-node kubernetes clusters on a Windows or Linux-based
-host via vagrant/VBox.  Select whether nodes are Ubuntu or CentOS via runtime parameter.  CNI network is selected via environment
-variable -- one of {calico, canal, flannel, romana, weave}.
+# ez-kubeadm -- Spin up local multi-node Kubernetes clusters with a single command.
 
-Following forking the repository, installation of applications, directory creation, and setting env variables, a complete
-Kubernetes cluster based on Ubuntu, with Calico networking, can be built with a single command in the vagrant project directory:
+My interest in automating Kubernetes cluster creation for a local VirtualBox environment has produced this set of Bash scripts, Vagrantfiles, and YAML to easily create multi-node kubernetes clusters on Windows WSL or Linux. Kubeadm is the tool used to deploy the cluster.
+
+The Kubernetes VMs can be either Ubuntu (default, though CentOS is easily selected via runtime parameter).  Currently supporting any of five networking alternatives, a CNI network is selected via environment variable -- one of {calico, canal, flannel, romana, weave}.  Calico is deployed by default.
+
+After cloning the repository locally (into, say $HOME/projects/ez-kubeadm), installing the few required applications, setting up directories and env variables, a complete Kubernetes cluster based on Ubuntu, with Calico networking, can be built with a single command in the vagrant project directory.
 
 Assuming you've downloaded the ez-kubeadm files in $HOME/projects/ez-kubeadm, these are the commands to build a working
-Ubuntu-based cluster in $HOME/projects/kube in about 10 minutes, or so.
-
+Ubuntu-based cluster in $HOME/projects/ukube in about 10 minutes:
 ```
 $ cd $HOME/projects
-$ mkdir kube && cd kube
+$ mkdir ukube && cd ukube
 $ vagrant init
 $ cp ../ez-kubeadm/* .
 $ cp $HOME/.ssh/id_rsa.pub id_rsa.pub.$LOGNAME
-$ source ./makeK8s.sh -s ubuntu
-
-... a couple of thousand lines of text, and 10-15 minutes later...
-
-$ kubectl config use-context kube
-Switched to context "kube".
+```
+You're ready to create a cluster. Re-create your Kubernetes cluster, anytime from this directory, with a single command:
+```
+$ source ./makeK8s.sh
+```
+10-15 minutes later, the cluster is up and ready to use:
+```
+$ kubectl config use-context ukube
+Switched to context "ukube".
 $ kubectl get nodes
 NAME     STATUS   ROLES    AGE     VERSION
-master   Ready    master   10m     v1.13.3
-node1    Ready    <none>   7m12s   v1.13.3
-node2    Ready    <none>   2m28s   v1.13.3
-
-... with the nodes manually added to /etc/hosts (or C:\Windows\System32\drivers\etc\hosts), and my public key
-    installed (by makeK8s.sh) on all nodes, I can easily ssh to nodes by name, and from any directory on my host:
-
+master   Ready    master   5m41s   v1.13.4
+node1    Ready    <none>   3m8s    v1.13.4
+node2    Ready    <none>   21s     v1.13.4                                                                             
+```
+Now, with the nodes manually added to /etc/hosts (or C:\Windows\System32\drivers\etc\hosts), and my public key
+    installed on all nodes, I can easily ssh to nodes by name, and from any directory on my host:
+```
 $ cd $HOME/test
+```
+Let's spin up a BusyBox container on each node, as a simple test:
+```
+$ kubectl create -f ds-bb.yaml
+daemonset.apps/bb created
+$ kubectl get po 
+NAME       READY   STATUS    RESTARTS   AGE
+bb-f77cg   1/1     Running   0          2m2s
+bb-r4blj   1/1     Running   0          87s
+bb-tzhtl   1/1     Running   0          2m2s
+```
+
 $ ssh master
 Warning: Permanently added the ECDSA host key for IP address '192.168.205.10' to the list of known hosts.
 Welcome to Ubuntu 16.04.6 LTS (GNU/Linux 4.4.0-142-generic x86_64)
- * Documentation:  https://help.ubuntu.com
- * Management:     https://landscape.canonical.com
- * Support:        https://ubuntu.com/advantage
-  Get cloud support with Ubuntu Advantage Cloud Guest:
-    http://www.ubuntu.com/business/services/cloud
-
-0 packages can be updated.
-0 updates are security updates.
-
-New release '18.04.2 LTS' available.
-Run 'do-release-upgrade' to upgrade to it.
-
-*** System restart required ***
-To run a command as administrator (user "root"), use "sudo <command>".
-See "man sudo_root" for details.
-
+--- misc text removed ---
 username@master: $
 ```
 Destroy the cluster by cd'ing into the project folder for the cluster, then run:
@@ -57,17 +56,17 @@ Destroy the cluster by cd'ing into the project folder for the cluster, then run:
 $ vagrant destroy -f
 ```
 
-To use CentOS and Flannel instead:
+To create a cluster built from CentOS and Flannel networking:
 ```
 $ export k8snet=flannel
 $ source ./makeK8s.sh -s centos
 ```
 
 I've had several issues with VirtualBox 6.0 -- I strongly recommend using 5.2.26 at this time.
-After hammering out issues with WSL, I'm satisfied that that environment is as good as the
-native Ubuntu under which these scripts were developed.  That said, see notes below.
+I've worked out all the issues, and am satisfied that that environment is as good as the
+native Ubuntu under which these scripts were initially developed (more below).
 
-As of mid-Mar, 2019, this script creates a 3-node k8s cluster, with these versions:
+As of mid-March, 2019, this script creates a 3-node k8s cluster, with these versions:
   * Kubernetes: 1.13.4                          (current version on kubernetes.io)
   * Docker:     18.06.2                         (prescribed by kubernetes.io)
   * Centos:     CentOS7,                        (prescribed by kubernetes.io))
@@ -76,9 +75,9 @@ As of mid-Mar, 2019, this script creates a 3-node k8s cluster, with these versio
   * Ubuntu:     Ubuntu/xenial64                 (prescribed by kubernetes.io)
     * Version   20190308.0.0                    (latest Ubuntu Xenial box from Vagrant)
 
-## Setup (Linux and Windows hosts):
-  1. Install VirtualBox and vagrant on your host system (my host is Ubuntu Bionic Beaver, which
-     was used to test all of this
+## Setup Instructions(Linux and Windows WSL hosts):
+  1. Install VirtualBox and vagrant on your host system (I happen to use native Ubuntu on one system, and
+     Windows WSL (Ubuntu) on the other.
   2. Create a project directory; cd to the project directory
   3. Run vagrant init
   4. Cluster network is calico, by default. To change, export an env var, $k8snet, setting it to
@@ -107,7 +106,8 @@ As of mid-Mar, 2019, this script creates a 3-node k8s cluster, with these versio
        Romana curiously seems to present a catch-22: romana-agent won't install on "not-ready" nodes,
        but the nodes can only become ready when romana-agent is up and running. My solution: add tolerance for
        nodes that are not-ready (applied to the romana-agent daemonset YAML).
-  7. Run "source ./makeK8s.sh -s ubuntu", or "source ./makeK8s.sh -s centos" to create a new cluster
+  7. Check the CPU/memory settings in the relevant Vagrantfile -- either Vagrantfile.ubuntu, or Vagrantfile.centos
+  8. Run "source ./makeK8s.sh -s ubuntu", or "source ./makeK8s.sh -s centos" to create a new cluster
   8. Edits to the Vagrantfile (Vagrantfile.ubuntu or Vagrantfile.centos) should only be needed to:
       * change the memory or CPU settings for the nodes
       * change master and worker node IP addresses.
@@ -121,20 +121,27 @@ As of mid-Mar, 2019, this script creates a 3-node k8s cluster, with these versio
        ```
      Make it executable (chmod +x) and move to a preferred directory in your path, e.g. /usr/local/bin.
   10. To set the KUBECONFIG env var at any time, on any shell, cd to the project directory, and "source" the
-  script "setKubeConfigVar.sh":
-     ```
-     $ source ./setKubeConfigVar.sh
-     ```
+      script "setKubeConfigVar.sh":
+      ```
+      $ source ./setKubeConfigVar.sh
+      ```
+      Consider copying this script into your path, somewhere.
   11. Only one context can be active at a time, across multiple shells.
-  12. Select context (project name) using
+  12 Several clusters can exist at any point in time.  View available configs using:
+      ```
+      $ kubectl config get-contexts
+      CURRENT   NAME       CLUSTER     AUTHINFO      NAMESPACE
+                ckube      ckube-clu   ckube-admin
+                minikube   minikube    minikube
+      *         ukube      ukube-clu   ukube-admin
+      ```
+  13. Select context (project name) using
       ```
       $ kubectl config use-context <context-name>
       ```
-  13. View configs using
-      ```
-      $ kubectl config view
-      ```
-  14. I suggest adding the node names (master, node1, etc) to your hosts file.
+  14. I suggest adding the node names (master, node1, etc) to your hosts file.  In Windows, these changes are applied to the 
+      native Windows hosts file -- not /etc/hosts in bash.  The native Windows hosts file can be found at
+      C:\Windows\system32\drivers\etc\hosts.
   
 ## WSL Notes (running these scripts on Windows 10's Linux environment):
 My development and testing were initially performed on Ubuntu 18 (Bionic). I later ported it to 
