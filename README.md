@@ -6,12 +6,12 @@ variable -- one of {calico, canal, flannel, romana, weave}.
 Following forking the repository, installation of applications, directory creation, and setting env variables, a complete
 Kubernetes cluster based on Ubuntu, with Calico networking, can be built with a single command in the vagrant project directory:
 
-Assuming you've downloaded the ez-kubeadm files in ~/projects/ez-kubeadm, and are cd'd into ~/projects, these are the commands to build a working Ubuntu-based cluster in ~/projects/kube in 10-15 minutes:
+Assuming you've downloaded the ez-kubeadm files in ~/projects/ez-kubeadm, these are the commands to build a working Ubuntu-based
+cluster in ~/projects/kube in about 10 minutes, or so.
 
 ```
 $ cd ~/projects
-$ mkdir kube
-$ cd kube
+$ mkdir kube && cd kube
 $ vagrant init
 $ cp ../ez-kubeadm/* .
 $ cp ~/.ssh/id_rsa.pub id_rsa.pub.$LOGNAME
@@ -67,14 +67,14 @@ I've had several issues with VirtualBox 6.0 -- I strongly recommend using 5.2.26
 After hammering out issues with WSL, I'm satisfied that that environment is as good as the
 native Ubuntu under which these scripts were developed.  That said, see notes below.
 
-As of mid-Feb, 2019, this script creates a 3-node k8s cluster, with these versions:
-  * Kubernetes: 1.13.3                          (current version on kubernetes.io)
+As of mid-Mar, 2019, this script creates a 3-node k8s cluster, with these versions:
+  * Kubernetes: 1.13.4                          (current version on kubernetes.io)
   * Docker:     18.06.2                         (prescribed by kubernetes.io)
   * Centos:     CentOS7,                        (prescribed by kubernetes.io))
-    * Version:  1901.01                         (latest CentOS7 box from Vagrant)
+    * Version:  1902.01                         (latest CentOS7 box from Vagrant)
   or
   * Ubuntu:     Ubuntu/xenial64                 (prescribed by kubernetes.io)
-    * Version   20190215.0.0                    (latest Ubuntu Xenial box from Vagrant)
+    * Version   20190308.0.0                    (latest Ubuntu Xenial box from Vagrant)
 
 ## Setup (Linux and Windows hosts):
   1. Install VirtualBox and vagrant on your host system (my host is Ubuntu Bionic Beaver, which
@@ -138,72 +138,82 @@ As of mid-Feb, 2019, this script creates a 3-node k8s cluster, with these versio
   
 ## WSL Notes (running these scripts on Windows 10's Linux environment):
 My development and testing were initially performed on Ubuntu 18 (Bionic). I later ported it to 
-Windows 10's WSL (bash) environment (Ubuntu).
-There were quite a number of changes required to get things working on Windows.
+Windows 10's WSL Ubuntu (bash) environment.
+
+There were serveral changes required to get things working on WSL, some in the Vagrantfiles, some in the
+Windows environment.  The required file changes are all included in the files in this repo.
+
 I've tried to capture all necessary steps here. I suggest reviewing: https://www.vagrantup.com/docs/other/wsl.html.
 Replace <user> with your preferred host user account. Replace <projects> with a directory of your choosing.
 
-  1. Install Windows version of VirtualBox -- 5.2.x.  VBox 6.0 gave me headaches that could be resolved.
+  1. Install Windows version of VirtualBox -- 5.2.x.  VBox 6.0 gave me headaches that I could not resolve.
   2. Add VirtualBox binaries to system PATH
        System->Properties->Adv System Settings->Environment Variables...->System variables
      The VirtualBox path is typically c:\Program Files\Oracle\VirtualBox
   3. Install vagrant for Linux in WSL bash.  I used 
        wget https://releases.hashicorp.com/vagrant/2.2.3/vagrant_2.2.3_x86_64.deb
-     Then sudo apt-get install ./vagrant_2.2.3_x86_64.deb (because Ubuntu is Debian-based, and uses apt).
-     NOTE: apt update from Windows bash seems to give older version; I opted for the latest.
+     Then
+       sudo apt-get install ./vagrant_2.2.3_x86_64.deb
+     NOTE: apt update from Windows bash seems to give older version; I opted for the latest, from hashicorp.
   4. vagrant projects don't work well from /home/<user>. Base your projects in, for example, /mnt/c/Users/<user>/projects,
      but use a symlink in a directory under your home directly, as suggested here:
        https://cepa.io/2018/02/20/linuxizing-your-windows-pc-part2/
      Let's make that more concrete:
-       My username is <user>; $HOME is /home/<user>; my projects directory in Windows is
-       C:\Users\<user>\<projects>, where my vagrant project folders live. Assume that we want to access 
-       that directory from $HOME/<projects>. Use a symlink to accomplish this.
+       My username is dsloyer; $HOME is /home/dsloyer; my projects directory in Windows is
+       C:\Users\dsloyer\projects, where my vagrant project folders live. Assume that we want to access 
+       that directory from $HOME/projects. Use a symlink to accomplish this.
        Make the vagrant project folders accessible from my $HOME directory:
        ```
        cd $HOME
-       ln -s /mnt/c/Users/<user>/<projects> <projects>
+       ln -s /mnt/c/Users/dsloyer/projects projects
        ```
+  5. export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH, and append to .bashrc
        Set the root path to your vagrant projects directory by exporting this env var (and append to .bashrc):
        ```
        export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/<user>/<projects>
        ```
-  5. export VAGRANT_WSL_ENABLE_WINDOWS_ACCESSS=1, and append to .bashrc
+  6. export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1, and append to .bashrc
      ```
-     export VAGRANT_WSL_ENABLE_WINDOWS_ACCESSS=1
-     echo "export VAGRANT_WSL_ENABLE_WINDOWS_ACCESSS=1" >>~/.bashrc
+     export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1
+     echo "export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1" >>~/.bashrc
      ```
-  6. To avoid rsync and vagrant ssh problems (e.g. "error when attempting to rsync a synced folder":
+  7. To avoid rsync and vagrant ssh problems (e.g. "error when attempting to rsync a synced folder":
      ```
-     export VAGRANT_HOME="/home/<user>/.vagrant.d"
+     export VAGRANT_HOME="/home/dsloyer/.vagrant.d"
      ```
      Note: In Vagrantfile, I've added this line to avoid another rsync issue: config.ssh.insert_key = false
-  7. There is a problem with Ubuntu/Xenial on VM spinup: "rawfile#0 failed to create the raw output file VERR_PATH_NOT_FOUND".
+  8. There is a problem with some Ubuntu box versions on VM spinup:
+        "rawfile#0 failed to create the raw output file VERR_PATH_NOT_FOUND".
      The error can be avoided by adding this line to the Vagrantfile:
+       ```
        vb.customize [ 'modifyvm', :id, '--uartmode1', 'disconnected']
-  8. C:\Windows\System32\drivers\etc\hosts file permissions -- user must have modify permission
+       ```
+  9. C:\Windows\System32\drivers\etc\hosts file permissions -- user must have modify permission
      to avoid "Permission denied" for the vagrant hostsupdater plugin to work (it's not installed by
-     VBox 5.2.x, but is in VBox 6.0.
-  9. no need to run as administrator -- neither bash, or VBox
-  10. When this group of files is pulled down from github, they may arrive as DOS-formatted files, which
+     VBox 5.2.x, but is in VBox 6.0.)
+  10. I've observed no need to run as administrator -- neither bash, or VBox Manager
+  11. When this group of files is pulled down from github, they may arrive as DOS-formatted files, which
      causes runtime errors.  Install and use dos2unix utility to modify the shell scripts, to correct.
-  11. Mounted Windows partitions, e.g. C:, may ignore permissions set, for example, by chmod. Correct this
+  12. Mounted Windows partitions, e.g. C:, may ignore permissions set, for example, by chmod. Correct this
       by re-mounting the volume, specifying "-o metadata", viz.:
-       "sudo umount /mnt/c && sudo mount -t drvfs C: /mnt/c -o metadata"
+      ```
+       $ sudo umount /mnt/c && sudo mount -t drvfs C: /mnt/c -o metadata
+      ```
       Also, the files in /mnt/c may all be owned by root. Adjust as needed.
       For more, see https://blogs.msdn.microsoft.com/commandline/2018/01/12/chmod-chown-wsl-improvements/
       Also: https://docs.microsoft.com/en-us/windows/wsl/wsl-config
-  12. With permissions changes enabled from bash (via metadata), tighten any ssh key permissions to avoid
+  13. With permissions changes enabled from bash (via metadata), tighten any ssh key permissions to avoid
       problems: I set my keys as "chmod 644 id_rsa*"
-  13. I've had problems with VMs (Xenial) booting extremely slowly with VBox 6.0, while v5.2.26 works great.
+  14. I've had problems with VMs (Xenial) booting extremely slowly with VBox 6.0, while v5.2.26 works great.
       see https://github.com/hashicorp/vagrant/issues/10578, for a discussion of this issue.
-  14. Another VBox 6.0 issue: Centos cluster VMs don't come up under VBox 6.0 either -- the master node
+  15. Another VBox 6.0 issue: Centos cluster VMs don't come up under VBox 6.0 either -- the master node
       boots fine, but the next VM fails to spin up. I've not yet found similar reports from others.
-  15. Side note on VBox 6.0: UAC will trigger when the hostupdater (a vagrant plugin) tries to update
+  16. Side note on VBox 6.0: UAC will trigger when the hostupdater (a vagrant plugin) tries to update
       the hosts file. Not sure how necessary this plugin is -- installed on v6.0 by default, consider
       removing it via "vagrant plugin remove".
 
 ## Network Notes:
-These all work -- feel free to use any of them.  Any quirks have been addressed in the Vagrantfiles and YAML:
+These all seem to work well -- feel free to use any of them.  Any quirks have been addressed in the Vagrantfiles and YAML:
   * calico:    Simply works.
   * weave:     Worker nodes require a static route to the master node.
   * romana:    Seems to require romana-agent daemonset tolerance for not-ready nodes
@@ -225,4 +235,3 @@ Thankfully, the project directory is automatically mounted onto each node by Vag
 Therefore, the SSH keys of interest are accessible by all our Vagrant VMs, at that location.
 I should add, however, that the contents of that directory are not well-synced, so changes to contents
 of files in /vagrant often go unseen, and may be lost. It's not a file server!
-
