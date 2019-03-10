@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # You should source this file to retain the KUBECONFIG env var created in the last script
 
 # echo "I was given $# argument(s):"
@@ -15,7 +16,7 @@ usage () {
   read x
 }
 
-os=""
+os="ubuntu"
 
 # must reset OPTIND to parse arguments properly when source'd
 OPTIND=1
