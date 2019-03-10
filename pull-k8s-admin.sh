@@ -52,20 +52,41 @@ else
   usage 1
 fi
 
+# The following steps are perform some useful cleanuip when new cluster instances
+# are created.
+#
 # NOTE: The following ssh-keygen commands work only if lines
-# have been added to the hosts file:
+# have been added to the hosts file (otherwise, use the IPs of the VM instances):
 #   Linux: /etc/hosts
 #   Windows: C:\Windows\System32\drivers\etc\hosts
 #
-# remove old host keys (Ubuntu)
+echo "remove old Ubuntu host keys (if any)"
 ssh-keygen -f ~/.ssh/known_hosts -R "master"
 ssh-keygen -f ~/.ssh/known_hosts -R "node1"
 ssh-keygen -f ~/.ssh/known_hosts -R "node2"
 
-# remove old CentOS host keys
+echo "remove old CentOS host keys (if any)"
 ssh-keygen -f ~/.ssh/known_hosts -R "cmaster"
 ssh-keygen -f ~/.ssh/known_hosts -R "cnode1"
 ssh-keygen -f ~/.ssh/known_hosts -R "cnode2"
+
+# NOTE: Later, when ssh'ing to a node, you might get notice of an "Offending key" in the known_hosts file.
+# They are complaining that a host with that IP address is already present in the known_hosts file.
+# The appearance of a host presenting a different key at a known IP address suggests mishief.
+#
+# To correct this, make note of the number of the number shown (e.g. 6). Here is the command:
+#   $ sed -i '6d' ~/.ssh/known_hosts
+#
+# To avoid the warning:
+#   $ ssh -o StrictHostKeyChecking=no user@host
+#
+# To permanently disable StrictHostKeyChecking, create or edit ~/.ssh/config, adding this line
+#   StrictHostKeyChecking no
+#
+# Despite disabling StrictHostKeyChecking, ssh will update known_hosts with the new host and key.
+# To further avoid adding new entries to known_hosts, add this on the ssh command line, or add 
+# to ~/.ssh/config:
+#   UserKnownHostsFile=/dev/null
 
 # Here, I've used hard-coded names from the Vagrantfiles
 if [[ "$os" = "centos" ]]; then
@@ -76,7 +97,7 @@ fi
 
 # get the current project directory path, then strip away all but the last
 dir="$(basename $(pwd))"
-echo "dir: $dir"
+echo "project directory: $dir"
 
 # pull down the kubernetes admin.conf file from the new master node to the current directory
 while true; do

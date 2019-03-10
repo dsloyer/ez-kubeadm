@@ -107,6 +107,11 @@ echo "ca_path:           $ca_path"
 echo "client_path:       $client_path"
 echo "client_key_path:   $client_key_path"
 
+# The cert data in the kubeconfig file appears as a line of text, encoded using
+# base64. We store them as individual PEM-formatted files.
+# The original cert text can be recovered by running base64 on a PEM file,
+# then removing the newline characters.
+#
 # extract cert data from the config file
 export client=$(grep client-cert                $fpath | cut -d " " -f 6)
 # echo client: $client
@@ -139,6 +144,13 @@ sed -i "/- name: kubernetes-admin/c\- name: $proj-admin"      $fpath
 if [[ ! "$ipaddr" = "" ]]; then
   # get APIServer port
   # find the server line, strip down to the ip address, remove leading slashes
+  #
+  #     grep "server:" ../ukube/admin.conf
+  #   gives this:
+  #     server: https://192.168.205.10:6443
+  # 
+  # The first "cut" trims all but the 3rd field ("//x.x.x.x")
+  # 2nd cut takes the string starting from the 3rd character to the end ("x.x.x.x")
   ipad=$(grep "server: " $fpath | cut -d ":" -f3 | cut -c 3-)
   # echo APIServer ipad: $ipad
   port=$(grep "server: " $fpath | cut -d ":" -f4)

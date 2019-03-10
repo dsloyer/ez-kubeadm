@@ -33,5 +33,5 @@ if [[ -d $cfgdir ]]; then
 else
     mkdir $cfgdir
     echo "Created directory, $cfgdir"
-    echo "Put kubeconfigs in $cfgdiir/ and source this profile to load."
+    echo "Put kubeconfigs in $cfgdir/ and source this script to load."
 fi;
