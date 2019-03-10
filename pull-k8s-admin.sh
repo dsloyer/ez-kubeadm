@@ -60,12 +60,12 @@ fi
 #   Linux: /etc/hosts
 #   Windows: C:\Windows\System32\drivers\etc\hosts
 #
-echo remove old Ubuntu host keys (if any)
+echo "remove old Ubuntu host keys (if any)"
 ssh-keygen -f ~/.ssh/known_hosts -R "master"
 ssh-keygen -f ~/.ssh/known_hosts -R "node1"
 ssh-keygen -f ~/.ssh/known_hosts -R "node2"
 
-echo remove old CentOS host keys (if any)
+echo "remove old CentOS host keys (if any)"
 ssh-keygen -f ~/.ssh/known_hosts -R "cmaster"
 ssh-keygen -f ~/.ssh/known_hosts -R "cnode1"
 ssh-keygen -f ~/.ssh/known_hosts -R "cnode2"
