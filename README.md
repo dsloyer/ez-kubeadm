@@ -1,10 +1,14 @@
 # ez-kubeadm -- Spin up local multi-node Kubernetes clusters with a single command.
 
-My interest in automating Kubernetes cluster creation for a local VirtualBox environment has produced this set of Bash scripts, Vagrantfiles, and YAML to easily create multi-node kubernetes clusters on Windows WSL or Linux. Kubeadm is the tool used to deploy the cluster.
+I wanted to be able to recycle Kubernetes clusters in my local environment with a single command.  My pursuit of this goal for my local VirtualBox environment in Linux and Windows 10 WSL, has resulted in this set of Bash scripts, Vagrantfiles, and YAML to easily create multi-node kubernetes clusters on Windows WSL or Linux. 
+
+Kubeadm is the tool used to deploy the cluster.
+vagrant installs and configures the Ubuntu/CentOS boxes on VirtualBox.
+bash scripts manage the process, and provide further customization of the cluster nodes, providing a seamless experience.
 
 The Kubernetes VMs can be either Ubuntu (default, though CentOS is easily selected via runtime parameter).  Currently supporting any of five networking alternatives, a CNI network is selected via environment variable -- one of {calico, canal, flannel, romana, weave}.  Calico is deployed by default.
 
-After cloning the repository locally (into, say $HOME/projects/ez-kubeadm), installing the few required applications, setting up directories and env variables, a complete Kubernetes cluster based on Ubuntu, with Calico networking, can be built with a single command in the vagrant project directory.
+A complete Kubernetes cluster based on Ubuntu, with Calico networking, can be built with a single command in the vagrant project directory. Before running that command, you first must do some modest preparation: 1) clone this repository locally (into, say $HOME/projects/ez-kubeadm), 2) installing vagrant and VirtualBox 5.2.26, 3) setting up directories and env variables.
 
 Assuming you've downloaded the ez-kubeadm files in $HOME/projects/ez-kubeadm, these are the commands to build a working
 Ubuntu-based cluster in $HOME/projects/ukube in about 10 minutes:
