@@ -8,7 +8,8 @@ and YAML to easily create multi-node kubernetes clusters on Windows WSL or Linux
 * Kubeadm is the tool used to deploy the cluster.
 * vagrant installs and configures the Ubuntu/CentOS boxes on VirtualBox.
 * bash scripts manage the process, perform further operations on the cluster nodes, providing a seamless experience.
-* To better support multiple kubernetes configurations, We modify the kubeconfig files, gather them in a single directory, and set the KUBECONFIG env var based on the contents of that directory.
+* To better support multiple kubernetes configurations, we modify the kubeconfig files, gather them in a single
+  directory, and set the KUBECONFIG env var based on the contents of that directory.
 
 The Kubernetes VMs can be either Ubuntu (by default; CentOS is easily selected via runtime parameter).
 Currently supporting any of five networking alternatives, a CNI network is selected via environment variable -- 
@@ -20,7 +21,7 @@ vagrant project directory. Before running that command, you first must do some m
   2. install vagrant and VirtualBox
   3. setup directories and env variables. All this is described in detail, below.
 
-Assuming you've setup your system per the instructions below, these are the commands to build a working
+Assuming you've setup your system per the instructions below, these are the commands to build a new, working
 Ubuntu-based cluster in $HOME/projects/ukube in about 10 minutes:
 ```
 $ cd $HOME/projects
