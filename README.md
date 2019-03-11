@@ -2,8 +2,8 @@
 
 I wanted to be able to re-generate Kubernetes clusters in my local environment with a single command.  I also
 wanted to support several clusters, and support easy switching between them.  Pursuit of these goals
-for my local VirtualBox environment in Linux and Windows 10 WSL, has resulted in this set of Bash scripts, Vagrantfiles,
-and YAML to easily create multi-node kubernetes clusters on Windows WSL or Linux. 
+for my local VirtualBox environment in Linux and Windows 10 WSL, has produced this collection of files -- 
+Bash scripts, Vagrantfiles, and YAML, to easily create multi-node kubernetes clusters on Windows WSL or Linux. 
 
 * Kubeadm is the tool used to deploy the cluster.
 * vagrant installs and configures the Ubuntu/CentOS boxes on VirtualBox.
