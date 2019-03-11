@@ -27,12 +27,14 @@
 #
 # NOTE: original config file remains unchanged.
 
+# Default location for new kubeconfig files:
+destdir="$HOME/.kube/config.d"
 proj=""
 fpath=""
-destdir="$HOME/.kube/config.d"
 cfgdir=""
 ipaddr=""
 test=0
+err=0
 
 usage () {
   echo "usage: `basename $0` -p proj[-i cfg-file][-o dest-dir][-a ipaddr][-t]" >&2
@@ -77,92 +79,91 @@ if [[ "$fpath" = "" ]]; then
   fpath="$HOME/projects/$proj/admin.conf"
 fi
 
-if [[ "$destdir" = "" ]]; then
-  # no destination directory provided; use assumed destination
-  destdir="$HOME/.kube/config.d"
-fi
-
 if [[ ! -d $destdir ]]; then
-  echo "directory, $destdir, does not exist."
-  usage 1
+  echo "ERROR: directory, $destdir, does not exist. Exiting."
+  err=1
 fi
 
-echo "project:           $proj"
-echo "config file:       $fpath"
-echo "dest dir:          $destdir"
+if [[ $err -eq 0 ]]; then
+  echo "project:           $proj"
+  echo "config file:       $fpath"
+  echo "dest dir:          $destdir"
 
-# realpath converts relative path to absolute
-cfgdir=$(realpath -s $(dirname $fpath))
-if [[ ! -d $cfgdir ]]; then
-  echo "ERROR: directory, cfgdir, does not exist: \"$cfgdir\""
-  exit 1
+  # realpath converts relative path to absolute
+  cfgdir=$(realpath -s $(dirname $fpath))
+  if [[ ! -d $cfgdir ]]; then
+    echo "ERROR: directory, cfgdir, does not exist: \"$cfgdir\""
+    err=1
+  fi
 fi
-echo "copy certs to:     $cfgdir"
 
-# paths to the cert files to be generated:
-ca_path=$cfgdir/ca.crt
-client_path=$cfgdir/client.crt
-client_key_path=$cfgdir/client.key
-echo "ca_path:           $ca_path"
-echo "client_path:       $client_path"
-echo "client_key_path:   $client_key_path"
+if [[ $err -eq 0 ]]; then
+  # paths to the cert files to be generated:
+  echo "copy certs to:     $cfgdir"
+  ca_path=$cfgdir/ca.crt
+  client_path=$cfgdir/client.crt
+  client_key_path=$cfgdir/client.key
+  echo "ca_path:           $ca_path"
+  echo "client_path:       $client_path"
+  echo "client_key_path:   $client_key_path"
 
-# The cert data in the kubeconfig file appears as a line of text, encoded using
-# base64. We store them as individual PEM-formatted files.
-# The original cert text can be recovered by running base64 on a PEM file,
-# then removing the newline characters.
-#
-# extract cert data from the config file
-export client=$(grep client-cert                $fpath | cut -d " " -f 6)
-# echo client: $client
-export    key=$(grep client-key-data            $fpath | cut -d " " -f 6)
-# echo key: $key
-export   auth=$(grep certificate-authority-data $fpath | cut -d " " -f 6)
-# echo auth: $auth
-
-# decode the cert data using base64, writing PEM files to the dest location
-echo $client | base64 -d - >$client_path
-echo $key    | base64 -d - >$client_key_path
-echo $auth   | base64 -d - >$ca_path
-
-# set aside a copy of the original config file
-cp $fpath $fpath.tmp
-
-# replace the cert data in the config file with paths to the generated PEM files
-sed -i "/client-certificate/c\    client-certificate: $client_path"   $fpath
-sed -i "/client-key/c\    client-key: $client_key_path"               $fpath
-sed -i "/certificate-authority/c\    certificate-authority: $ca_path" $fpath
-
-# replace the cluster and context names with new preferred names (all derived from the project name):
-sed -i "/  name: kubernetes$/c\  name: $proj-clu"             $fpath
-sed -i "/    cluster: kubernetes/c\    cluster: $proj-clu"    $fpath
-sed -i "/  name: kubernetes-admin@kubernetes/c\  name: $proj" $fpath
-sed -i "/current-context: kubernetes-admin@kubernetes/c\current-context: $proj" $fpath
-sed -i "/    user: kubernetes-admin/c\    user: $proj-admin"  $fpath
-sed -i "/- name: kubernetes-admin/c\- name: $proj-admin"      $fpath
-
-if [[ ! "$ipaddr" = "" ]]; then
-  # get APIServer port
-  # find the server line, strip down to the ip address, remove leading slashes
+  # The cert data in the kubeconfig file appears as a line of text, encoded using
+  # base64. We store them as individual PEM-formatted files.
+  # The original cert text can be recovered by running base64 on a PEM file,
+  # then removing the newline characters.
   #
-  #     grep "server:" ../ukube/admin.conf
-  #   gives this:
-  #     server: https://192.168.205.10:6443
-  # 
-  # The first "cut" trims all but the 3rd field ("//x.x.x.x")
-  # 2nd cut takes the string starting from the 3rd character to the end ("x.x.x.x")
-  ipad=$(grep "server: " $fpath | cut -d ":" -f3 | cut -c 3-)
-  # echo APIServer ipad: $ipad
-  port=$(grep "server: " $fpath | cut -d ":" -f4)
-  # echo APIServer port: $port
-  sed -i "/    server: /c\    server: https://$ipaddr:$port" $fpath
-fi
+  # extract cert data from the config file
+  export client=$(grep client-cert                $fpath | cut -d " " -f 6)
+  # echo client: $client
+  export    key=$(grep client-key-data            $fpath | cut -d " " -f 6)
+  # echo key: $key
+  export   auth=$(grep certificate-authority-data $fpath | cut -d " " -f 6)
+  # echo auth: $auth
 
-# copy the final file to the specified destination, and restore original config file
-cp $fpath $destdir/$proj.kubeconfig
-cp $fpath.tmp $fpath
+  # decode the cert data using base64, writing PEM files to the dest location
+  echo $client | base64 -d - >$client_path
+  echo $key    | base64 -d - >$client_key_path
+  echo $auth   | base64 -d - >$ca_path
 
-# test:
-if [[ $test -eq 1 ]]; then
-  curl --cert $client_path --key $client_key_path --cacert $ca_path https://$ipaddr:$port/api/v1/pods
+  # set aside a copy of the original config file
+  cp $fpath $fpath.tmp
+
+  # replace the cert data in the config file with paths to the generated PEM files
+  sed -i "/client-certificate/c\    client-certificate: $client_path"   $fpath
+  sed -i "/client-key/c\    client-key: $client_key_path"               $fpath
+  sed -i "/certificate-authority/c\    certificate-authority: $ca_path" $fpath
+
+  # replace the cluster and context names with new preferred names (all derived from the project name):
+  sed -i "/  name: kubernetes$/c\  name: $proj-clu"             $fpath
+  sed -i "/    cluster: kubernetes/c\    cluster: $proj-clu"    $fpath
+  sed -i "/  name: kubernetes-admin@kubernetes/c\  name: $proj" $fpath
+  sed -i "/current-context: kubernetes-admin@kubernetes/c\current-context: $proj" $fpath
+  sed -i "/    user: kubernetes-admin/c\    user: $proj-admin"  $fpath
+  sed -i "/- name: kubernetes-admin/c\- name: $proj-admin"      $fpath
+
+  if [[ ! "$ipaddr" = "" ]]; then
+    # get APIServer port
+    # find the server line, strip down to the ip address, remove leading slashes
+    #
+    #     grep "server:" ../ukube/admin.conf
+    #   gives this:
+    #     server: https://192.168.205.10:6443
+    # 
+    # The first "cut" trims all but the 3rd field ("//x.x.x.x")
+    # 2nd cut takes the string starting from the 3rd character to the end ("x.x.x.x")
+    ipad=$(grep "server: " $fpath | cut -d ":" -f3 | cut -c 3-)
+    # echo APIServer ipad: $ipad
+    port=$(grep "server: " $fpath | cut -d ":" -f4)
+    # echo APIServer port: $port
+    sed -i "/    server: /c\    server: https://$ipaddr:$port" $fpath
+  fi
+
+  # copy the final file to the specified destination, and restore original config file
+  cp $fpath $destdir/$proj.kubeconfig
+  cp $fpath.tmp $fpath
+
+  # test:
+  if [[ $test -eq 1 ]]; then
+    curl --cert $client_path --key $client_key_path --cacert $ca_path https://$ipaddr:$port/api/v1/pods
+  fi
 fi

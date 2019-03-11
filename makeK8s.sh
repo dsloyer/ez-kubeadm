@@ -1,10 +1,8 @@
 #!/bin/bash
 
-
 # You should source this file to retain the KUBECONFIG env var created in the last script
 
-# echo "I was given $# argument(s):"
-# printf "%s\n" "$@"
+err=0
 
 if [ "$_" = "${BASH_SOURCE}" ]; then
   printf 'ERROR: Source this script; do not execute.\n' >&2
@@ -12,16 +10,25 @@ if [ "$_" = "${BASH_SOURCE}" ]; then
 fi
 
 usage () {
-  echo "usage: source ./makeK8s.sh [-s centos | ubuntu]" >&2
+  echo "usage: source ./makeK8s.sh [-s centos | ubuntu][-o destDir]" >&2
+  echo "\n"
+  echo "options:"
+  echo " -s specifies either CentOS or Ubuntu nodes"
+  echo " destDir indicates the directory where kubeconfig files are being collected"
+  echo "Ctl-c to exit"
   read x
 }
 
+dstOpt=""
 os="ubuntu"
 
 # must reset OPTIND to parse arguments properly when source'd
 OPTIND=1
-while getopts s: opt; do
+while getopts o:s: opt; do
   case $opt in
+    o)
+      dstOpt="-o $OPTARG"
+      ;;
     s)
       os=$OPTARG
       ;;
@@ -60,15 +67,33 @@ else
   cp Vagrantfile.ubuntu Vagrantfile
 fi
 
-echo "Create new kubernetes cluster"
+echo "Calling 'vagrant up' to create new kubernetes cluster"
 vagrant up
+if [[ $? -ne 0 ]]; then
+  err = 1
+fi
 
-echo "Retrieve kube config file (admin.conf), and scrub ~/.ssh/known_hosts"
-./pull-k8s-admin.sh -s $os
+if [[ $err -eq 0 ]]; then
+  echo "Calling pull-k8s-admin.sh to retrieve kube config file (admin.conf), and scrub ~/.ssh/known_hosts"
+  ./pull-k8s-admin.sh -s $os
+  if [[ $? -ne 0 ]]; then
+    err=1
+  fi
+fi
 
-echo "re-work kube config file and re-locate to multi-config k8s directory"
-./modKubeConfigFile.sh -p $(basename $(pwd))
+if [[ $err -eq 0 ]]; then
+  echo "Calling modKubeConfigFile.sh to re-work kube config file and re-locate to multi-config k8s directory"
+  ./modKubeConfigFile.sh -p $(basename $(pwd)) $dstOpt
+  if [[ $? -ne 0 ]]; then
+    err=1
+  fi
+fi
 
-echo "set KUBECONFIG env var."
-source ./setKubeConfigVar.sh
+if [[ $err -eq 0 ]]; then
+  echo "Calling setKubeConfigVar.sh to set KUBECONFIG env var."
+  source ./setKubeConfigVar.sh $dstOpt
+  if [[ $? -ne 0 ]]; then
+    err=1
+  fi
+fi
 
