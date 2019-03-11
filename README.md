@@ -34,7 +34,7 @@ node1    Ready    <none>   3m8s    v1.13.4
 node2    Ready    <none>   21s     v1.13.4                                                                             
 
 ```
-Let's change directory, spin up a BusyBox container on each node, then ssh to the master node:
+Let's change directory, spin up a BusyBox container on each node as a daemonset, then ssh to the master node:
 ```
 $ cd $HOME/test
 $ kubectl create -f ds-bb.yaml
@@ -47,14 +47,16 @@ Are you sure you want to continue connecting (yes/no)? yes
 Warning: Permanently added 'master' (ECDSA) to the list of known hosts.
 Welcome to Ubuntu 16.04.6 LTS (GNU/Linux 4.4.0-142-generic x86_64)
 --- some text removed ---
-username@master:~$ kubectl get po
-NAME       READY   STATUS    RESTARTS   AGE
-bb-f77cg   1/1     Running   0          17m
-bb-r4blj   1/1     Running   0          17m
-bb-tzhtl   1/1     Running   0          17m
+
+username@master:~$ kubectl get po -o wide
+NAME       READY   STATUS    RESTARTS   AGE   IP            NODE     NOMINATED NODE   READINESS GATES
+bb-2jc26   1/1     Running   0          32s   192.168.0.5   master   <none>           <none>
+bb-7xhkx   1/1     Running   0          32s   192.168.1.3   node1    <none>           <none>
+bb-d684p   1/1     Running   0          32s   192.168.2.4   node2    <none>           <none>
 ```
 Destroy the cluster by cd'ing into the project folder for the cluster, then run:
 ```
+$ cd $HOME/projects/ukube
 $ vagrant destroy -f
 ```
 
