@@ -77,8 +77,6 @@ $ source ./makeK8s.sh -s centos
 ```
 
 I've had several issues with VirtualBox 6.0 -- I strongly recommend using 5.2.26 at this time.
-I've worked out all the issues, and am satisfied that that environment is as good as the
-native Ubuntu under which these scripts were initially developed (more below).
 
 As of mid-March, 2019, this script creates a 3-node k8s cluster, with these versions:
   * Kubernetes: 1.13.4                          (current version on kubernetes.io)
