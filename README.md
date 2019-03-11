@@ -20,7 +20,7 @@ vagrant project directory. Before running that command, you first must do some m
   2. install vagrant and VirtualBox
   3. setup directories and env variables. All this is described in detail, below.
 
-Assuming you've downloaded the ez-kubeadm files in $HOME/projects/ez-kubeadm, these are the commands to build a working
+Assuming you've setup your system per the instructions below, these are the commands to build a working
 Ubuntu-based cluster in $HOME/projects/ukube in about 10 minutes:
 ```
 $ cd $HOME/projects
@@ -100,38 +100,54 @@ As of mid-March, 2019, this script creates a 3-node k8s cluster, with these vers
      Make it executable and move to a preferred directory in your path, e.g. /usr/local/bin, as seen above
   2. Install VirtualBox 5.2.6 for your system.  On Linux, install VirtualBox for Linux. For Windows WSL, install the Windows
      version, not the Linux version.
-  3. (WSL only) Add VirtualBox binaries to system PATHSystem->Properties->Adv System Settings->Environment Variables...->System variables
-     The VirtualBox path is typically c:\Program Files\Oracle\VirtualBox
+  3. (WSL only) Add VirtualBox binaries to System PATH, found at
+       System->Properties->Adv System Settings->Environment Variables...->System variables
+     The VirtualBox path is typically c:\Program Files\Oracle\VirtualBox, which you append to the System PATH.
   4. Install vagrant for Linux in bash (both Linux and Windows WSL). I used
-       ```
-       $ wget https://releases.hashicorp.com/vagrant/2.2.3/vagrant_2.2.3_x86_64.deb
-       $ sudo apt-get install ./vagrant_2.2.3_x86_64.deb
-       ```
+     ```
+     $ wget https://releases.hashicorp.com/vagrant/2.2.3/vagrant_2.2.3_x86_64.deb
+     $ sudo apt-get install ./vagrant_2.2.3_x86_64.deb
+     ```
   5. We assume you have a projects directory, e.g. $HOME/projects.
   
      WSL only: as discussed below, it's a good idea to locate the projects directory in, e.g., C:\Users\$LOGNAME\projects,
      set env vars also listed here, and specify metadata on the mounted C: drive:
-       ```
-       $ ln -s /mnt/c/Users/$LOGNAME/projects $HOME/projects
-       $ export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/$LOGNAME/projects
-       $ echo "VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/$LOGNAME/projects" >>$HOME/.bashrc
-       $ export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1
-       $ echo "export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1" >>$HOME/.bashrc
-       $ export VAGRANT_HOME="$HOME/.vagrant.d"
-       $ sudo umount /mnt/c && sudo mount -t drvfs C: /mnt/c -o metadata
-       ```
-  6. Create a new directory, ez-kubeadm, in your projects directory, to hold the ez-kubeadm repo files
+     ```
+     $ ln -s /mnt/c/Users/$LOGNAME/projects $HOME/projects
+     $ export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/$LOGNAME/projects
+     $ echo "VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/$LOGNAME/projects" >>$HOME/.bashrc
+     $ export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1
+     $ echo "export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1" >>$HOME/.bashrc
+     $ export VAGRANT_HOME="$HOME/.vagrant.d"
+     $ sudo umount /mnt/c && sudo mount -t drvfs C: /mnt/c -o metadata
+     ```
+  6. Create a new directory, ez-kubeadm, in your projects directory, to hold the ez-kubeadm repo files, and populate it
+     with the files from this repo.
   7. Create a project directory specific to each kubernetes cluster you wish to keep; e.g. $HOME/projects/ukube/, and ckube/
      (one for an Ubuntu cluster, another for CentOS).
   8. Accept ez-kubeadm's default directory for kubeconfig files -- $HOME/.kube/config.d. This can be over-ridden
-     by using the "-o" option to makeK8s.sh. If you accept the default directory, create it.
+     by using the "-o" option to makeK8s.sh. If you accept the default directory, create it:
+     ```
+     $ mkdir $HOME/.kube/config.d
+     ```
   9. cd to the specific kubernetes cluster project directory, e.g. $HOME/projects/ukube
   10. Run "vagrant init"
-  11. Pull the collection of files from github into the project directory
-  12. Check the CPU/memory settings in the relevant Vagrantfile -- either Vagrantfile.ubuntu, or Vagrantfile.centos.
+      ```
+      $ vagrant init
+      ```
+  11. Copy the collection of files from this repo into the project directory
+      ```
+      $ cp ../ez-kubeadm/* .
+      ```
+  12. Copy your id_rsa.pub file into the vagrant project folder (if needed, use "ssh-keygen -t rsa -b 4096 -f id_rsa" in
+      $HOME/.ssh)
+      ```
+      $ cp $HOME/.ssh/id_rsa.pub id_rsa.pub.$LOGNAME
+      ```
+  13. Check the CPU/memory settings in the relevant Vagrantfile -- either Vagrantfile.ubuntu, or Vagrantfile.centos.
       Preferring Ubuntu, I've set RAM on Ubuntu nodes to 4096MB, while Centos nodes get only 2048MB, unless changed
       in the Vagrantfile.
-  13. Run "source ./makeK8s.sh", or "source ./makeK8s.sh -s centos" to create a new cluster
+  14. Run "source ./makeK8s.sh", or "source ./makeK8s.sh -s centos" to create a new cluster
   
 NOTES  
   1. Edits to the Vagrantfile (Vagrantfile.ubuntu or Vagrantfile.centos) should only be needed to:
@@ -139,7 +155,7 @@ NOTES
      * change master and worker node IP addresses.
        Ubuntu master IP is 192.168.205.10; worker node IPs immediately follow, i.e. node1 is 192.168.205.11
        CentOS cmaster IP is 192.168.205.15; worker node IPs immediately follow, i.e. cnode1 is 192.168.205.16
-     * want more/fewer nodes? edit the relevant servers array, below.
+     * want more/fewer nodes? edit the servers array in the Vagrantfile.
 
   2. To set the KUBECONFIG env var at any time, on any shell, cd to the project directory, and "source" the
      script "setKubeConfigVar.sh":
@@ -172,7 +188,8 @@ My development and testing were initially performed on Ubuntu 18 (Bionic). I lat
 Windows 10's WSL Ubuntu (bash) environment.
 
 There were serveral changes required to get things working on WSL -- some in the Vagrantfiles, some in the
-Windows environment.  The required file changes are all included in the files in this repo.
+Windows environment.  Thankfully, the required file changes for WSL are compatible with native Ubuntu, so
+we don't need any Windows-specific files.
 
 I've tried to capture all necessary steps here. I suggest reviewing: https://www.vagrantup.com/docs/other/wsl.html.
 
