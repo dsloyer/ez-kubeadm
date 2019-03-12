@@ -1,12 +1,10 @@
 # Spin Up Multi-node Kubernetes Clusters In One Simple Command
 
-I wanted to be able to create, and recreate, various Kubernetes clusters on demand, in my local environment,
-with a single command -- an exercise in Infrastructure as Code (IaC). I also wanted to support several clusters,
-and support easy switching between them.
+This collection of files -- Bash scripts, Vagrantfiles, and YAML files -- along with a few detailed instructions,
+below, automate creation/re-creation of Kubernetes clusters on demand, in a local environment, with a single command.
+It also supports several clusters, and easy switching between them.
 
-Following the thread of development in pursuit of these goals has led to this collection of files -- Bash scripts,
-Vagrantfiles, and YAML files -- which achieve the initial goal.  First implemented on a vintage laptop running
-Ubuntu Linux, I extended the project to also include Windows WSL on a newer laptop.
+First implemented on a vintage laptop running Ubuntu Linux, I extended the project to also include Windows WSL.
 
 All the files that comprise this project are in github.com/dsloyer/ez-kubeadm
 
