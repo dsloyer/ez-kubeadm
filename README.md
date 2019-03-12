@@ -7,11 +7,11 @@ It also supports several clusters, and easy switching between them.
 First implemented on a vintage laptop running Ubuntu Linux, I extended the project to also include Windows 10 WSL
 (Windows Subsystem for Linux).
 
-All the files that comprise this project are in github.com/dsloyer/ez-kubeadm
+All the files that comprise this project are in http://github.com/dsloyer/ez-kubeadm
 
 * Kubeadm is the tool used to deploy the cluster.
-* vagrant installs and configures the Ubuntu/CentOS boxes on VirtualBox.
-* bash scripts manage the process, perform further operations on the cluster nodes, providing a seamless experience.
+* Vagrant installs and configures the Ubuntu/CentOS boxes on VirtualBox.
+* Bash scripts manage the process, perform further operations on the cluster nodes, providing a seamless experience.
 * To better support multiple kubernetes configurations, we modify the kubeconfig files, gather them in a single
   directory, and set the KUBECONFIG env var based on the contents of that directory.
 * I like to ssh directly into the cluster from any directory on my host, which is enabled by pushing an SSH public
@@ -121,7 +121,7 @@ As of mid-March, 2019, this script creates a 3-node k8s cluster (master and 2 wo
      ```
   5. We assume you have a projects directory, e.g. $HOME/projects.
   
-     WSL only: as discussed below, it's a good idea to locate the projects directory in, e.g., C:\Users\$LOGNAME\projects,
+     WSL only: as discussed below, it's a good idea to locate the projects directory in, e.g., C:\Users\\$LOGNAME\projects,
      set env vars also listed here, and specify metadata on the mounted C: drive:
      ```
      $ ln -s /mnt/c/Users/$LOGNAME/projects $HOME/projects
