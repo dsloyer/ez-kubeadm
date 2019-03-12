@@ -1,4 +1,4 @@
-# Spin Up Multi-node Kubernetes Clusters In One Simple Command
+# Create Local Multi-node Kubernetes Clusters In One Simple Command
 
 This collection of files -- Bash scripts, Vagrantfiles, and YAML files -- along with a few detailed instructions,
 below, automate creation/re-creation of Kubernetes clusters on demand, in a local environment, with a single command.
