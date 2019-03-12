@@ -4,7 +4,8 @@ This collection of files -- Bash scripts, Vagrantfiles, and YAML files -- along 
 below, automate creation/re-creation of Kubernetes clusters on demand, in a local environment, with a single command.
 It also supports several clusters, and easy switching between them.
 
-First implemented on a vintage laptop running Ubuntu Linux, I extended the project to also include Windows WSL.
+First implemented on a vintage laptop running Ubuntu Linux, I extended the project to also include Windows 10 WSL
+(Windows Subsystem for Linux).
 
 All the files that comprise this project are in github.com/dsloyer/ez-kubeadm
 
