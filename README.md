@@ -1,19 +1,30 @@
-# ez-kubeadm -- Spin up local multi-node Kubernetes clusters with a single command.
+# Spin Up Multi-node Kubernetes Clusters In One Simple Command
 
-I wanted to be able to re-generate Kubernetes clusters in my local environment with a single command.  I also
-wanted to support several clusters, and support easy switching between them.  Pursuit of these goals
-for my local VirtualBox environment in Linux and Windows 10 WSL, has produced this collection of files -- 
-Bash scripts, Vagrantfiles, and YAML, to easily create multi-node kubernetes clusters on Windows WSL or Linux. 
+I wanted to be able to create, and recreate, various Kubernetes clusters on demand, in my local environment,
+with a single command -- an exercise in Infrastructure as Code (IaC). I also wanted to support several clusters,
+and support easy switching between them.
+
+Following the thread of development in pursuit of these goals has led to this collection of files -- Bash scripts,
+Vagrantfiles, and YAML files -- which achieve the initial goal.  First implemented on a vintage laptop running
+Ubuntu Linux, I extended the project to also include Windows WSL on a newer laptop.
+
+All the files that comprise this project are in github.com/dsloyer/ez-kubeadm
 
 * Kubeadm is the tool used to deploy the cluster.
 * vagrant installs and configures the Ubuntu/CentOS boxes on VirtualBox.
 * bash scripts manage the process, perform further operations on the cluster nodes, providing a seamless experience.
 * To better support multiple kubernetes configurations, we modify the kubeconfig files, gather them in a single
   directory, and set the KUBECONFIG env var based on the contents of that directory.
+* I like to ssh directly into the cluster from any directory on my host, which is enabled by pushing an SSH public
+  key down to each node.
 
-The Kubernetes VMs can be either Ubuntu (by default; CentOS is easily selected via runtime parameter).
+The Kubernetes master and worker node VMs can be either Ubuntu (by default; CentOS is easily selected via runtime
+parameter).
+
 Currently supporting any of five networking alternatives, a CNI network is selected via environment variable -- 
-one of {calico, canal, flannel, romana, weave}.  Calico is deployed by default.
+one of {calico, canal, flannel, romana, weave}.  Calico is deployed by default.  You may not care what network is
+being used -- I included them as an exercise for me.  If you're interested in exploring, for example, network policies,
+you may find one network, or another, to be of interest.
 
 A complete Kubernetes cluster based on Ubuntu, with Calico networking, can be built with a single command in the
 vagrant project directory. Before running that command, you first must do some modest preparation:
@@ -21,8 +32,8 @@ vagrant project directory. Before running that command, you first must do some m
   2. install vagrant and VirtualBox
   3. setup directories and env variables. All this is described in detail, below.
 
-Assuming you've setup your system per the instructions below, these are the commands to build a new, working
-Ubuntu-based cluster in $HOME/projects/ukube in about 10 minutes:
+Assuming you've setup your system per the instructions below, a few simple steps prepare for an entirely new cluster.
+Let's call it 'ukube':
 ```
 $ cd $HOME/projects
 $ mkdir ukube && cd ukube
@@ -30,11 +41,12 @@ $ vagrant init
 $ cp ../ez-kubeadm/* .
 $ cp $HOME/.ssh/id_rsa.pub id_rsa.pub.$LOGNAME
 ```
-You're ready to create a cluster. Re-create your Kubernetes cluster, anytime from this directory, with a single command:
+You're ready to create a cluster, or destroy and recreate an Ubuntu-based Kubernetes cluster, anytime, from this directory,
+with a single command:
 ```
 $ source ./makeK8s.sh
 ```
-10-15 minutes later, the cluster is up and ready to use:
+About 10 minutes later, the cluster is up and ready to use:
 ```
 $ kubectl config use-context ukube
 Switched to context "ukube".
@@ -43,9 +55,9 @@ NAME     STATUS   ROLES    AGE     VERSION
 master   Ready    master   5m41s   v1.13.4
 node1    Ready    <none>   3m8s    v1.13.4
 node2    Ready    <none>   21s     v1.13.4                                                                             
-
 ```
-Let's change directory, spin up a BusyBox container on each node as a daemonset, then ssh to the master node:
+Let's change directory, spin up a BusyBox container on each node as a daemonset (ds-bb.yaml not shown here), ssh
+to the master node, and list the running pods:
 ```
 $ cd $HOME/test
 $ kubectl create -f ds-bb.yaml
@@ -79,7 +91,7 @@ $ source ./makeK8s.sh -s centos
 
 I've had several issues with VirtualBox 6.0 -- I strongly recommend using 5.2.26 at this time.
 
-As of mid-March, 2019, this script creates a 3-node k8s cluster, with these versions:
+As of mid-March, 2019, this script creates a 3-node k8s cluster (master and 2 worker nodes), with these versions:
   * Kubernetes: 1.13.4                          (current version on kubernetes.io)
   * Docker:     18.06.2                         (prescribed by kubernetes.io)
   * Centos:     CentOS7,                        (prescribed by kubernetes.io))
@@ -98,7 +110,8 @@ As of mid-March, 2019, this script creates a 3-node k8s cluster, with these vers
        ```
      Make it executable and move to a preferred directory in your path, e.g. /usr/local/bin, as seen above
   2. Install VirtualBox 5.2.6 for your system.  On Linux, install VirtualBox for Linux. For Windows WSL, install the Windows
-     version, not the Linux version.
+     version, not the Linux version.  NOTE: We assume you've enabled virtualization in the BIOS, and that no competing
+     virtualization schemes have been enabled (e.g. Windows Hyper-V)
   3. (WSL only) Add VirtualBox binaries to System PATH, found at
        System->Properties->Adv System Settings->Environment Variables...->System variables
      The VirtualBox path is typically c:\Program Files\Oracle\VirtualBox, which you append to the System PATH.
