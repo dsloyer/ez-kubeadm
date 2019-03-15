@@ -4,13 +4,21 @@ This collection of files -- Bash scripts, Vagrantfiles, and YAML files -- along 
 below, automate creation/re-creation of Kubernetes clusters on demand, in a local environment, with a single command.
 It also supports several clusters, and easy switching between them.
 
-Why do this, and why should you care? My interest, beyond the challenge, was to:
+Why use this project and not another?  The short answer is "to make it really, really easy".  My interest, beyond
+taking it as a modest "Infrastructure as Code" personal challenge, was to:
 * Avoid the stumbling, often confusing, process of deploying using other solutions
 * Reduce the steps scattered across kubernetes.io's kubeadm setup webpage, to a single command
 * Package it such that discarding, and recreating, a working cluster is trivial, reliable, and fast
 * Document the tools, applications needed (where to find, what, and how, to install)
 * Report the issues discovered, and their resolution...
 * For both Linux and Windows 10 WSL (Windows Subsystem for Linux).
+
+What's the downside?
+* Your environment may be different than mine, causing you to encounter problems that I've promised you would be
+  avoiding.  Sorry if that occurs.
+* You may not agree with the tools I specify, or the changes suggested in your environment
+* You may feel limited by my choice of operating systems, cluster configuration, etc. (Let me know).
+* This project may fall behind kubeadm advances/changes in kubernetes.io.  C'est la vie.
 
 All the files that comprise this project are in https://github.com/dsloyer/ez-kubeadm
 
