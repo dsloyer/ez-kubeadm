@@ -3,18 +3,19 @@
 This project has a simple aim: make is easy to create multi-node Kubernetes clusters, in a local environment,
 with a single command.  Also, to supports several clusters, and easy switching between them.
 
-Why use this project and not another?  I've made really, really easy for me -- maybe you will find it easy for you,
-as well.  My interest, beyond taking it as a modest "Infrastructure as Code" personal challenge, was to:
+Why use this project and not another?  Because the steps are clear and uncomplicated -- maybe you will find it
+easy for you, as well.  My interest, beyond taking it as a modest "Infrastructure as Code" personal challenge,
+was to:
 * Avoid a sometimes complex, often confusing, process of deployment via other solutions.
 * Applying a "canonical" Kubernetes deployment solution, kubeadm, whose steps can be easily seen to be consistent
   with the steps appearing in kubernetes.io for kubeadm (actually copied/pasted from there, whenever possible).
-* Reduce and consolidate the steps scattered across kubernetes.io's kubeadm setup webpage (kubeadm, CRI, CNI, etc),
+* Combine and consolidate the steps scattered across kubernetes.io's kubeadm setup webpage (kubeadm, CRI, CNI, etc),
   to a single command.
-* Package it such that discarding, and recreating, a working cluster is trivial, reliable, and fast.
+* Implement it such that discarding, and recreating, a working cluster is trivial, reliable, and fast.
 * Document the tools, applications needed (where to find, what, and how, to install).
-* Report the issues discovered, and their resolution.
-* For both Linux and Windows 10 WSL (Windows Subsystem for Linux).
-* All in one small bundle of files.
+* Report the issues discovered in the development process, and catalogue their resolution.
+* Support both Linux and Windows 10 WSL (Windows Subsystem for Linux) hosts.
+* Package it as a small bundle of files.
 
 What's the downside?
 * Your environment may be different than mine, causing you to encounter problems that I've promised you would be
