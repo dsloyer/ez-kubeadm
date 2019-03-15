@@ -247,6 +247,8 @@ Specific env vars and for Windows WSL:
       Also: https://docs.microsoft.com/en-us/windows/wsl/wsl-config
   4. With permissions changes enabled from bash (via metadata), tighten any ssh key permissions to avoid
       problems: I set my keys as "chmod 644 id_rsa*"
+  5. vagrant is prone to throwing "Insecure world writable dir" errors. I tend to use "chmod 755 <dir>" to correct
+     these, which seems to work fine.
 
 That's it for the setup.  Here are some further WSL notes, which describe some issues I've encountered;
 they have all been addressed by the files in our repo:
