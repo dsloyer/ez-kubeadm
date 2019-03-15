@@ -1,20 +1,19 @@
-# Create Local Multi-node Kubernetes Clusters In One Simple Command
+## Create Local Multi-node Kubernetes Clusters In One Simple Command
 
-This collection of files -- Bash scripts, Vagrantfiles, and YAML files -- along with a few detailed instructions,
-below, automate creation/re-creation of Kubernetes clusters on demand, in a local environment, with a single command.
-It also supports several clusters, and easy switching between them.
+This project has a simple aim: make is easy to create multi-node Kubernetes clusters, in a local environment,
+with a single command.  Also, to supports several clusters, and easy switching between them.
 
-Why use this project and not another?  I made really, really easy for me -- maybe you will find it easy for you,
+Why use this project and not another?  I've made really, really easy for me -- maybe you will find it easy for you,
 as well.  My interest, beyond taking it as a modest "Infrastructure as Code" personal challenge, was to:
-* Avoid the stumbling, often confusing, process of deploying using other solutions
-* Applying a "canonical" Kubernetes deployment solution, kubeadm, that can be easily seen to be consistent with
-  the steps appearing in kubernetes.io for kubeadm (actually copied/pasted from there, whenever possible).
-* Reduce the steps scattered across kubernetes.io's kubeadm setup webpage (kubeadm, CRI, CNI, etc), to a
-  single command
-* Package it such that discarding, and recreating, a working cluster is trivial, reliable, and fast
-* Document the tools, applications needed (where to find, what, and how, to install)
-* Report the issues discovered, and their resolution...
-* For both Linux and Windows 10 WSL (Windows Subsystem for Linux)
+* Avoid a sometimes complex, often confusing, process of deployment via other solutions.
+* Applying a "canonical" Kubernetes deployment solution, kubeadm, whose steps can be easily seen to be consistent
+  with the steps appearing in kubernetes.io for kubeadm (actually copied/pasted from there, whenever possible).
+* Reduce and consolidate the steps scattered across kubernetes.io's kubeadm setup webpage (kubeadm, CRI, CNI, etc),
+  to a single command.
+* Package it such that discarding, and recreating, a working cluster is trivial, reliable, and fast.
+* Document the tools, applications needed (where to find, what, and how, to install).
+* Report the issues discovered, and their resolution.
+* For both Linux and Windows 10 WSL (Windows Subsystem for Linux).
 * All in one small bundle of files.
 
 What's the downside?
@@ -26,6 +25,7 @@ What's the downside?
 
 All the files that comprise this project are in https://github.com/dsloyer/ez-kubeadm
 
+## Overview
 * Kubeadm is the tool used to deploy the cluster.
 * Vagrant installs and configures the Ubuntu/CentOS boxes on VirtualBox.
 * Bash scripts manage the process, perform further operations on the cluster nodes, providing a seamless experience.
@@ -48,6 +48,16 @@ vagrant project directory. Before running that command, you first must do some m
   2. install vagrant and VirtualBox
   3. setup directories and env variables. All this is described in detail, below.
 
+As of mid-March, 2019, this script creates a 3-node k8s cluster (master and 2 worker nodes), with these versions:
+  * Kubernetes: 1.13.4                          (current version on kubernetes.io)
+  * Docker:     18.06.2                         (prescribed by kubernetes.io)
+  * Centos:     CentOS7,                        (prescribed by kubernetes.io))
+    * Version:  1902.01                         (latest CentOS7 box from Vagrant)
+  or
+  * Ubuntu:     Ubuntu/xenial64                 (prescribed by kubernetes.io)
+    * Version   20190308.0.0                    (latest Ubuntu Xenial box from Vagrant)
+    
+## Show Me
 Assuming you've setup your system per the instructions below, a few simple steps prepare for an entirely new cluster.
 Let's call it 'ukube':
 ```
@@ -105,18 +115,9 @@ $ export k8snet=flannel
 $ source ./makeK8s.sh -s centos
 ```
 
-I've had several issues with VirtualBox 6.0 -- I strongly recommend using 5.2.26 at this time.
-
-As of mid-March, 2019, this script creates a 3-node k8s cluster (master and 2 worker nodes), with these versions:
-  * Kubernetes: 1.13.4                          (current version on kubernetes.io)
-  * Docker:     18.06.2                         (prescribed by kubernetes.io)
-  * Centos:     CentOS7,                        (prescribed by kubernetes.io))
-    * Version:  1902.01                         (latest CentOS7 box from Vagrant)
-  or
-  * Ubuntu:     Ubuntu/xenial64                 (prescribed by kubernetes.io)
-    * Version   20190308.0.0                    (latest Ubuntu Xenial box from Vagrant)
-
 ## Setup Instructions:
+The setup for native Linux and Windows WSL is virtually identical, other than a few additional commands I've detailed just below.
+
   1. Install kubectl on your host system, per instructions on kubernetes.io
      One method (https://kubernetes.io/docs/tasks/tools/install-kubectl/):
        ```
@@ -125,20 +126,15 @@ As of mid-March, 2019, this script creates a 3-node k8s cluster (master and 2 wo
        $ sudo mv kubectl /usr/local/bin
        ```
      Make it executable and move to a preferred directory in your path, e.g. /usr/local/bin, as seen above
-  2. Install VirtualBox 5.2.6 for your system.  On Linux, install VirtualBox for Linux. For Windows WSL, install the Windows
-     version, not the Linux version.  NOTE: We assume you've enabled virtualization in the BIOS, and that no competing
-     virtualization schemes have been enabled (e.g. Windows Hyper-V)
-  3. (WSL only) Add VirtualBox binaries to System PATH, found at
+  2. Install VirtualBox 5.2.6 for your system (VirtualBox 6.0 has only given unresolvable problem).
+     On Linux, install VirtualBox for Linux. For Windows WSL, install the Windows version, not the Linux version.
+     NOTE: We assume you've enabled virtualization in the BIOS, and that no conflicting virtualization schemes have
+     been enabled (e.g. Windows Hyper-V)
+  3. [WSL only] Add VirtualBox binaries to System PATH, found at
        System->Properties->Adv System Settings->Environment Variables...->System variables
      The VirtualBox path is typically c:\Program Files\Oracle\VirtualBox, which you append to the System PATH.
-  4. Install vagrant for Linux in bash (both Linux and Windows WSL). I used
-     ```
-     $ wget https://releases.hashicorp.com/vagrant/2.2.3/vagrant_2.2.3_x86_64.deb
-     $ sudo apt-get install ./vagrant_2.2.3_x86_64.deb
-     ```
-  5. We assume you have a projects directory, e.g. $HOME/projects.
-  
-     WSL only: as discussed below, it's a good idea to locate the projects directory in, e.g., C:\Users\$LOGNAME\projects,
+     
+     As discussed below, it's a good idea to locate the projects directory in, e.g., C:\Users\$LOGNAME\projects,
      set a symlink from /home/$LOGNAME to that projects directory, set env vars also listed here, and specify metadata
      on the mounted C: drive:
      ```
@@ -148,34 +144,38 @@ As of mid-March, 2019, this script creates a 3-node k8s cluster (master and 2 wo
      $ echo "export VAGRANT_HOME=\"$HOME/.vagrant.d\""      >>$HOME/.bashrc && source $HOME/.bashrc
      $ sudo umount /mnt/c && sudo mount -t drvfs C: /mnt/c -o metadata
      ```
-  6. Create a new directory, ez-kubeadm, in your projects directory, to hold the ez-kubeadm repo files, and populate it
-     with the files from this repo.
-  7. Create a project directory specific to the new kubernetes cluster; e.g. $HOME/projects/ukube/.
-  8. Accept ez-kubeadm's default directory for kubeconfig files -- $HOME/.kube/config.d. This can be over-ridden
+  4. Install vagrant for Linux in bash (both Linux and Windows WSL). I used
+     ```
+     $ wget https://releases.hashicorp.com/vagrant/2.2.3/vagrant_2.2.3_x86_64.deb
+     $ sudo apt-get install ./vagrant_2.2.3_x86_64.deb
+     ```
+  5. Clone ez-kubeadm into your projects directory, e.g. #HOME/projects/ez-kubeadm.
+  6. Create a project directory specific to the new kubernetes cluster; e.g. $HOME/projects/ukube/.
+  7. Accept ez-kubeadm's default directory for kubeconfig files -- $HOME/.kube/config.d. This can be over-ridden
      by using the "-o" option to makeK8s.sh. If you accept the default directory, create it:
      ```
      $ mkdir -p $HOME/.kube/config.d
      ```
-  9. cd to the specific kubernetes cluster project directory, e.g. $HOME/projects/ukube
-  10. Run "vagrant init"
-      ```
-      $ vagrant init
-      ```
-  11. Copy the collection of files from this repo into the project directory
+  8. cd to the specific kubernetes cluster project directory, e.g. $HOME/projects/ukube
+  9. Run "vagrant init"
+     ```
+     $ vagrant init
+     ```
+  10. Copy the collection of files from this repo into the project directory
       ```
       $ cp ../ez-kubeadm/* .
       ```
-  12. Copy your id_rsa.pub file into the vagrant project folder (if needed, use "ssh-keygen -t rsa -b 4096 -f id_rsa" in
+  11. Copy your id_rsa.pub file into the vagrant project folder (if needed, use "ssh-keygen -t rsa -b 4096 -f id_rsa" in
       $HOME/.ssh)
       ```
       $ cp $HOME/.ssh/id_rsa.pub id_rsa.pub.$LOGNAME
       ```
-  13. Check the CPU/memory settings in the relevant Vagrantfile -- either Vagrantfile.ubuntu, or Vagrantfile.centos.
-      Preferring Ubuntu, I've set RAM on Ubuntu nodes to 4096MB, while Centos nodes get only 2048MB, unless changed
+  12. Consider the CPU/memory settings in the relevant Vagrantfile -- either Vagrantfile.ubuntu, or Vagrantfile.centos.
+      Preferring Ubuntu, I've set RAM on Ubuntu nodes to 4096MB, while CentOS nodes get only 2048MB, unless changed
       in the Vagrantfile.
-  14. Run "source ./makeK8s.sh", or "source ./makeK8s.sh -s centos" to create a new cluster
+  13. Run "source ./makeK8s.sh", or "source ./makeK8s.sh -s centos" to create a new cluster
   
-NOTES  
+## Notes 
   1. Edits to the Vagrantfile (Vagrantfile.ubuntu or Vagrantfile.centos) should only be needed to:
      * change the memory or CPU settings for the nodes
      * change master and worker node IP addresses.
@@ -183,8 +183,8 @@ NOTES
        CentOS cmaster IP is 192.168.205.15; worker node IPs immediately follow, i.e. cnode1 is 192.168.205.16
      * want more/fewer nodes? edit the servers array in the Vagrantfile.
 
-  2. To set the KUBECONFIG env var at any time, on any shell, cd to the project directory, and "source" the
-     script "setKubeConfigVar.sh":
+  2. To set the KUBECONFIG env var at any time, e.g. on a new shell instance, cd to the project directory, and
+     "source" the script, setKubeConfigVar.sh:
      ```
      $ source ./setKubeConfigVar.sh
      ```
