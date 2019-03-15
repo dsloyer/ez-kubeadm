@@ -176,8 +176,7 @@
 #       $ cp $HOME/.ssh/id_rsa.pub id_rsa.pub.$LOGNAME
 #       ```
 #   12. Consider the CPU/memory settings in the relevant Vagrantfile -- either Vagrantfile.ubuntu, or Vagrantfile.centos.
-#       Preferring Ubuntu, I've set RAM on Ubuntu nodes to 4096MB, while CentOS nodes get only 2048MB, unless changed
-#       in the Vagrantfile.
+#       By default, nodes receive 2048MB memory, and 2 vCPUs.
 #   13. Run "source ./makeK8s.sh", or "source ./makeK8s.sh -s centos" to create a new cluster
 #   
 # ## Notes 
