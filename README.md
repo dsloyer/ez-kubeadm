@@ -195,6 +195,8 @@ NOTES
      
      In Windows, these changes are applied to the native Windows hosts file -- not /etc/hosts in bash.
      The native Windows hosts file can be found at C:\Windows\system32\drivers\etc\hosts.
+  7. When you are entirely finished with a cluster, the kubeconfig file will remain after its destruction;
+     as such, you will want to delete it from the directory where these files are kept -- $HOME/.kube/config.d.
   
 ## WSL Notes (running these scripts on Windows 10's Linux environment):
 
