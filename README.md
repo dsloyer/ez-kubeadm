@@ -228,7 +228,7 @@ Specific env vars and for Windows WSL:
      home directly, as suggested here:
        https://cepa.io/2018/02/20/linuxizing-your-windows-pc-part2/
      Let's make that more concrete:
-       My username is in $LOGNAME; $HOME is /home/$LOGNAME; my projects directory in Windows is
+       My username is $LOGNAME; $HOME is /home/$LOGNAME; my projects directory in Windows is
        C:\Users\$LOGNAME\projects, where my vagrant project folders live. Assume that we want to access 
        that directory from $HOME/projects. Use a symlink to accomplish this.
        Make the vagrant project folders accessible from my $HOME directory:
@@ -287,18 +287,17 @@ they have all been addressed by the files in our repo:
 ## Repo Files and Network Notes:
 
 These are the files included in the repo:
-  * makeK8s.sh (one script to rule them all, and in the darkness bind them (LOTR))
-  * Vagrantfiles (Vagrantfile.centos and Vagrantfile.ubuntu -- one of which is copied to Vagrantfile at runtime.
-  * post-k8s.sh (make account for host user on nodes, prepare to pull kube config file, admin.conf)
-  * pull-k8s-admin.sh (download admin.conf from master, for use on host)
-  * modKubeConfigFile.sh (process admin.conf file, for 
-  * setKubeConfigVar.sh (consolidate multi-cluster configs into KUBECONFIG env var)
-  * copy public key for a desired host user account. E.g., I am on my host, and want to ssh
-    to any node as <username>. I copy my id_rsa.pub file into the vagrant project directory, for scripted
-    install on nodes
+  * makeK8s.sh -- wrapper
+  * Vagrantfiles -- Vagrantfile.centos and Vagrantfile.ubuntu -- one of which is copied to Vagrantfile at runtime.
+  * post-k8s.sh -- make account for host user on nodes, prepare to pull kube config file, admin.conf
+  * pull-k8s-admin.sh -- download admin.conf from master, for use on host
+  * modKubeConfigFile.sh -- process admin.conf file, extracting PKI data, massage naming, and save in directory
+    with other kubeconfig files
+  * setKubeConfigVar.sh -- consolidate multi-cluster configs into KUBECONFIG env var
+  
   The modified network CNI YAML files are included in this repository. They are:
-  * canal2.yaml, canal2c.yaml (canal2 for Ubuntu, canal2c for CentOS),
-  * kube-flannel.yaml, kube-flannelc.yaml, and
+  * canal2.yaml, canal2c.yaml -- canal2 for Ubuntu, canal2c for CentOS
+  * kube-flannel.yaml, kube-flannelc.yaml
   * romana-kubeadm.yaml
 
 These network CNI's all seem to work well -- feel free to use any of them.  Any quirks have been addressed in the
@@ -323,13 +322,12 @@ In building the worker nodes, We run a script on each of the nodes to scp the ku
 from the master node (where kubeadm places it, while building the master node).
 This allows automation of the nodes joining the kubernetes cluster.
 
-To use scp, we use the aforementioned key pair for the vagrant user on each of the nodes,
-in /home/vagrant/.ssh
+To use scp, we use the aforementioned key pair for the vagrant user on each of the nodes, in 
+/home/vagrant/.ssh
 On the master, we also need to add the vagrant pub-key into the master's authorized_keys file, in
 /home/vagrant/.ssh/authorized_keys
 
 Thankfully, the project directory is automatically mounted onto each node by Vagrant, at /vagrant.
 Therefore, the SSH keys of interest are accessible by all our Vagrant VMs, at that location.
-I should add, however, that the contents of that directory are not well-synced, so changes to contents
-of files in /vagrant often go unseen, and may be lost.
+
 NOTE: The mount is only automatic during node creation, and must be re-mounted manually if the node reboots.
