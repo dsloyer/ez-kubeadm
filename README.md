@@ -4,8 +4,14 @@ This collection of files -- Bash scripts, Vagrantfiles, and YAML files -- along 
 below, automate creation/re-creation of Kubernetes clusters on demand, in a local environment, with a single command.
 It also supports several clusters, and easy switching between them.
 
-First implemented on a vintage laptop running Ubuntu Linux, I extended the project to also include Windows 10 WSL
-(Windows Subsystem for Linux).
+Why do this, and why should you care? My interest, beyond the challenge, was to:
+* Avoid the stumbling, often confusing, process of deploying using other solutions
+* consolidate the steps shown the kubernetes.io's kubeadm setup webpage, as far as possible (single command)
+* document the tools, applications needed (where to find, how to install)
+* Report the issues discovered, and their resolution
+* for both Linux and Windows 10 WSL
+
+First implemented on native Ubuntu Linux, I extended the project to also include Windows 10 WSL (Windows Subsystem for Linux).
 
 All the files that comprise this project are in https://github.com/dsloyer/ez-kubeadm
 
@@ -105,7 +111,7 @@ As of mid-March, 2019, this script creates a 3-node k8s cluster (master and 2 wo
        ```
        $ curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
        $ chmod +x kubectl
-       $ mv kubectl /usr/local/bin
+       $ sudo mv kubectl /usr/local/bin
        ```
      Make it executable and move to a preferred directory in your path, e.g. /usr/local/bin, as seen above
   2. Install VirtualBox 5.2.6 for your system.  On Linux, install VirtualBox for Linux. For Windows WSL, install the Windows
@@ -122,24 +128,22 @@ As of mid-March, 2019, this script creates a 3-node k8s cluster (master and 2 wo
   5. We assume you have a projects directory, e.g. $HOME/projects.
   
      WSL only: as discussed below, it's a good idea to locate the projects directory in, e.g., C:\Users\$LOGNAME\projects,
-     set env vars also listed here, and specify metadata on the mounted C: drive:
+     set a symlink from /home/$LOGNAME to that projects directory, set env vars also listed here, and specify metadata
+     on the mounted C: drive:
      ```
      $ ln -s /mnt/c/Users/$LOGNAME/projects $HOME/projects
-     $ export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/$LOGNAME/projects
-     $ echo "VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/$LOGNAME/projects" >>$HOME/.bashrc
-     $ export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1
-     $ echo "export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1" >>$HOME/.bashrc
-     $ export VAGRANT_HOME="$HOME/.vagrant.d"
+     $ echo "export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/$LOGNAME/projects" >>$HOME/.bashrc && source $HOME/.bashrc
+     $ echo "export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1" >>$HOME/.bashrc && source $HOME/.bashrc
+     $ echo "export VAGRANT_HOME=\"$HOME/.vagrant.d\""      >>$HOME/.bashrc && source $HOME/.bashrc
      $ sudo umount /mnt/c && sudo mount -t drvfs C: /mnt/c -o metadata
      ```
   6. Create a new directory, ez-kubeadm, in your projects directory, to hold the ez-kubeadm repo files, and populate it
      with the files from this repo.
-  7. Create a project directory specific to each kubernetes cluster you wish to keep; e.g. $HOME/projects/ukube/, and ckube/
-     (one for an Ubuntu cluster, another for CentOS).
+  7. Create a project directory specific to the new kubernetes cluster; e.g. $HOME/projects/ukube/.
   8. Accept ez-kubeadm's default directory for kubeconfig files -- $HOME/.kube/config.d. This can be over-ridden
      by using the "-o" option to makeK8s.sh. If you accept the default directory, create it:
      ```
-     $ mkdir $HOME/.kube/config.d
+     $ mkdir -p $HOME/.kube/config.d
      ```
   9. cd to the specific kubernetes cluster project directory, e.g. $HOME/projects/ukube
   10. Run "vagrant init"
@@ -218,19 +222,17 @@ Specific env vars and for Windows WSL:
        ln -s /mnt/c/Users/$LOGNAME/projects $HOME/projects
        ```
   * export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH, and append to .bashrc
-       Set the root path to your vagrant projects directory by exporting this env var (and append to .bashrc):
+       Set the root path to your vagrant projects directory by exporting this env var, and append to .bashrc:
        ```
-       export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/$LOGNAME/projects
-       echo "VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/$LOGNAME/projects" >>$HOME/.bashrc
+       echo "export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/$LOGNAME/projects" >>$HOME/.bashrc && source $HOME/.bashrc
        ```
   * export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS, and append to .bashrc
      ```
-     export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1
      echo "export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1" >>$HOME/.bashrc
      ```
   * To avoid rsync and vagrant ssh problems (e.g. "error when attempting to rsync a synced folder":
      ```
-     export VAGRANT_HOME="/home/$LOGNAME/.vagrant.d"
+     echo "export VAGRANT_HOME=\"/home/$LOGNAME/.vagrant.d\"" >>$HOME/.bashrc && source $HOME/.bashrc
      ```
      Note: In Vagrantfile, I've added this line to avoid another rsync issue: config.ssh.insert_key = false
   2. C:\Windows\System32\drivers\etc\hosts file permissions -- user must have modify permission
