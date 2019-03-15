@@ -98,8 +98,10 @@ echo "copy $user's .profile, .bashrc, and .vimrc to node"
 sudo chown -R $user:$user /tmp
 # sudo mv /tmp/.profile /home/$user
 # sudo mv /tmp/.bashrc  /home/$user
-sudo cp /tmp/.vimrc   /home/vagrant
-sudo mv /tmp/.vimrc   /home/$user
+if [[ -f /tmp/.vimrc ]]; then
+  sudo cp /tmp/.vimrc   /home/vagrant
+  sudo mv /tmp/.vimrc   /home/$user
+fi
 
 # enable kubectl completion on each node
 echo make kubectl completion permanent for $user, appending to .bashrc

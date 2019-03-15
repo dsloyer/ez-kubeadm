@@ -16,7 +16,7 @@
 #   3. Run vagrant init
 #   4. Cluster network is calico, by default. To change, export an env var, $k8snet, setting it to
 #      one of: calico, canal, flannel, romana, weave
-#   5. We assume kube config files are gathered together in a directory, ~/.kube/config.d, on the host. 
+#   5. We assume kube config files are gathered together in a directory, $HOME/.kube/config.d, on the host. 
 #   6. Pull the collection of files from github into the project directory:
 #        - makeK8s.sh (one script to rule them all, and in the darkness bind them (LOTR))
 #        - Vagrantfile (this file)
@@ -499,8 +499,8 @@ Vagrant.configure("2") do |config|
 
       # stage some files from the host to /tmp on the nodes
       config.vm.provision "file", source: "~/.profile", destination: "/tmp/.profile"
-      config.vm.provision "file", source: "~/.bashrc",  destination: "/tmp/.bashrc"
-      config.vm.provision "file", source: "~/.vimrc",   destination: "/tmp/.vimrc"
+      config.vm.provision "file", source: "~$HOME/.bashrc",  destination: "/tmp/.bashrc"
+      # config.vm.provision "file", source: ~/.vimrc",   destination: "/tmp/.vimrc"
 
       # Here, we apply a bit of "Ruby dust", fetching the LOGNAME from the current environment,
       # and passing that to our post-k8s script as an environment variable, NEWUSER, appearing
