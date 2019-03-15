@@ -7,8 +7,9 @@ It also supports several clusters, and easy switching between them.
 Why do this, and why should you care? My interest, beyond the challenge, was to:
 * Avoid the stumbling, often confusing, process of deploying using other solutions
 * consolidate the steps shown the kubernetes.io's kubeadm setup webpage, as far as possible (single command)
-* document the tools, applications needed (where to find, how to install)
-* Report the issues discovered, and their resolution
+* package it such that recreating, a working cluster is trivial
+* document the tools, applications needed (where to find, what, and how, to install)
+* Report the issues discovered, and their resolution...
 * for both Linux and Windows 10 WSL
 
 First implemented on native Ubuntu Linux, I extended the project to also include Windows 10 WSL (Windows Subsystem for Linux).
