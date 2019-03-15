@@ -147,8 +147,8 @@ The setup for native Linux and Windows WSL is virtually identical, other than a 
      ```
   4. Install vagrant for Linux in bash (both Linux and Windows WSL). I used
      ```
-     $ wget https://releases.hashicorp.com/vagrant/2.2.3/vagrant_2.2.3_x86_64.deb
-     $ sudo apt-get install ./vagrant_2.2.3_x86_64.deb
+     $ wget https://releases.hashicorp.com/vagrant/2.2.4/vagrant_2.2.4_x86_64.deb
+     $ sudo apt-get install ./vagrant_2.2.4_x86_64.deb
      ```
   5. Clone ez-kubeadm into your projects directory, e.g. #HOME/projects/ez-kubeadm.
   6. Create a project directory specific to the new kubernetes cluster; e.g. $HOME/projects/ukube/.
