@@ -1,49 +1,61 @@
-# Create Local Multi-node Kubernetes Clusters In One Simple Command
+## Create Local Multi-node Kubernetes Clusters In One Simple Command
 
-The aim of this project is to automate the creation of multi-node Kubernetes clusters, locally, with a single command.
-A further goal was to support several clusters, and easy switching between them.
+This project has a simple aim: make is easy to create multi-node Kubernetes clusters, in a local
+environment, with a single command.  Also, to supports several clusters, and easy switching between
+them.
 
-Why might you prefer this project over one of the other deployment methods?
-The answer is one of simplicity:
-* Avoid the complex, often confusing, process of deploying using other solutions
-* Using a "canonical" deployment tool, kubeadm, applying commands taken directly from kubernetes.io
-* Consolidate the steps shown the kubernetes.io's kubeadm setup webpage, as far as possible (single command)
-* Document the tools, applications needed (where to find, how to install)
-* Report the issues discovered, and their resolution
-* Support native Linux and Windows 10 WSL (Windows Subsystem for Linux)
+Why use this project and not another?  Because the steps are clear and uncomplicated -- maybe you
+will find it easy for you, as well.  My interest, beyond taking it as a modest "Infrastructure as
+Code" personal challenge, was to:
+* Avoid a sometimes complex, often confusing, process of deployment via other solutions.
+* Applying a "canonical" Kubernetes deployment solution, kubeadm, whose steps can be easily seen
+  to be consistent with the steps appearing in kubernetes.io for kubeadm (actually copied/pasted
+  from there, whenever possible).
+* Combine and consolidate the steps scattered across kubernetes.io's kubeadm setup webpage
+  (kubeadm, CRI, CNI, etc), to a single command.
+* Implement it such that discarding, and recreating, a working cluster is trivial, reliable, and
+  fast.
+* Document the tools, applications needed (where to find, what, and how, to install).
+* Report the issues discovered in the development process, and catalogue their resolution.
+* Support both Linux and Windows 10 WSL (Windows Subsystem for Linux) hosts.
+* Package it as a small bundle of files.
 
-Why might disappoint you?
-* Your environment might be different than mine, raising issues I've not seen or addressed.
-* You might not agree with the environment settings, and file configurations used
-* This project may fail to keep up with further developments.
-
+What's the downside?
+* Your environment may be different than mine, causing you to encounter problems that I've promised
+  you would be avoiding.  Sorry if that occurs.
+* You may not agree with the tools I specify, or the changes suggested in your environment
+* You may feel limited by my choice of operating systems, cluster configuration, etc. (Let me know).
+* This project may fall behind kubeadm advances/changes in kubernetes.io.  C'est la vie.
 
 All the files that comprise this project are in https://github.com/dsloyer/ez-kubeadm
 
 ## Overview
 * Kubeadm is the tool used to deploy the cluster.
 * Vagrant installs and configures the Ubuntu/CentOS boxes on VirtualBox.
-* Bash scripts manage the process, perform further operations on the cluster nodes, providing a seamless experience.
-* To better support multiple kubernetes configurations, we modify the kubeconfig files, gather them in a single
-  directory, and set the KUBECONFIG env var based on the contents of that directory.
-* I like to ssh directly into the cluster from any directory on my host, which is enabled by pushing an SSH public
-  key down to each node.
+* Bash scripts manage the process, perform further operations on the cluster nodes, providing a
+  seamless experience.
+* To better support multiple kubernetes configurations, we modify the kubeconfig files, gather them
+  in a single directory, and set the KUBECONFIG env var based on the contents of that directory.
+* I like to ssh directly into the cluster from any directory on my host, which is enabled by pushing
+  an SSH public key down to each node.
 
-The Kubernetes master and worker node VMs can be either Ubuntu (by default; CentOS is easily selected via runtime
-parameter).
+The Kubernetes master and worker node VMs can be either Ubuntu (by default; CentOS is easily selected
+  via runtime parameter).
 
-Currently supporting any of five networking alternatives, a CNI network is selected via environment variable -- 
-one of {calico, canal, flannel, romana, weave}.  Calico is deployed by default.  You may not care what network is
-being used -- I included them as an exercise for me.  If you're interested in exploring, for example, network policies,
-you may find one network, or another, to be of interest.
+Currently supporting any of five networking alternatives, a CNI network is selected via environment
+variable -- one of {calico, canal, flannel, romana, weave}.  Calico is deployed by default.  You may
+not care what network is being used -- I included them as an exercise for me.  If you're interested
+in exploring, for example, network policies, you may find one network, or another, to be of interest.
 
-A complete Kubernetes cluster based on Ubuntu, with Calico networking, can be built with a single command in the
-vagrant project directory. Before running that command, you first must do some modest preparation:
+A complete Kubernetes cluster based on Ubuntu, with Calico networking, can be built with a single
+command in the vagrant project directory. Before running that command, you first must do some
+modest preparation:
   1. clone this repository locally (into, say $HOME/projects/ez-kubeadm)
   2. install vagrant and VirtualBox
   3. setup directories and env variables. All this is described in detail, below.
 
-As of mid-March, 2019, this script creates a 3-node k8s cluster (master and 2 worker nodes), with these versions:
+As of mid-March, 2019, this script creates a 3-node k8s cluster (master and 2 worker nodes), with
+these versions:
   * Kubernetes: 1.13.4                          (current version on kubernetes.io)
   * Docker:     18.06.2                         (prescribed by kubernetes.io)
   * Centos:     CentOS7,                        (prescribed by kubernetes.io))
@@ -51,10 +63,10 @@ As of mid-March, 2019, this script creates a 3-node k8s cluster (master and 2 wo
   or
   * Ubuntu:     Ubuntu/xenial64                 (prescribed by kubernetes.io)
     * Version   20190308.0.0                    (latest Ubuntu Xenial box from Vagrant)
-
+    
 ## Show Me
-Assuming you've setup your system per the instructions below, a few simple steps prepare for an entirely new cluster.
-Let's call it 'ukube':
+Assuming you've setup your system per the instructions below, a few simple steps prepare for an
+entirely new cluster. Let's call it 'ukube':
 ```
 $ cd $HOME/projects
 $ mkdir ukube && cd ukube
@@ -62,8 +74,8 @@ $ vagrant init
 $ cp ../ez-kubeadm/* .
 $ cp $HOME/.ssh/id_rsa.pub id_rsa.pub.$LOGNAME
 ```
-You're ready to create a cluster, or destroy and recreate an Ubuntu-based Kubernetes cluster, anytime, from this directory,
-with a single command:
+You're ready to create a cluster, or destroy and recreate an Ubuntu-based Kubernetes cluster,
+anytime, from this directory, with a single command:
 ```
 $ source ./makeK8s.sh
 ```
@@ -77,8 +89,8 @@ master   Ready    master   5m41s   v1.13.4
 node1    Ready    <none>   3m8s    v1.13.4
 node2    Ready    <none>   21s     v1.13.4                                                                             
 ```
-Let's change directory, spin up a BusyBox container on each node as a daemonset (ds-bb.yaml not shown here), ssh
-to the master node, and list the running pods:
+Let's change directory, spin up a BusyBox container on each node as a daemonset (ds-bb.yaml not
+shown here), ssh to the master node, and list the running pods:
 ```
 $ cd $HOME/test
 $ kubectl create -f ds-bb.yaml
@@ -110,8 +122,10 @@ $ export k8snet=flannel
 $ source ./makeK8s.sh -s centos
 ```
 
-## Notes
 ## Setup Instructions:
+The setup for native Linux and Windows WSL is virtually identical, other than a few additional
+commands I've detailed just below.
+
   1. Install kubectl on your host system, per instructions on kubernetes.io
      One method (https://kubernetes.io/docs/tasks/tools/install-kubectl/):
        ```
@@ -119,17 +133,22 @@ $ source ./makeK8s.sh -s centos
        $ chmod +x kubectl
        $ sudo mv kubectl /usr/local/bin
        ```
-     Make it executable and move to a preferred directory in your path, e.g. /usr/local/bin, as seen above
-  2. Install VirtualBox 5.2.6 for your system.  On Linux, install VirtualBox for Linux. For Windows WSL, install the Windows
-     version, not the Linux version.  NOTE: We assume you've enabled virtualization in the BIOS, and that no competing
+     Make it executable and move to a preferred directory in your path, e.g. /usr/local/bin, as
+     seen above
+  2. Install VirtualBox 5.2.6 for your system (VirtualBox 6.0 has only given unresolvable problem).
+     On Linux, install VirtualBox for Linux. For Windows WSL, install the Windows version, not the
+     Linux version.
+     NOTE: We assume you've enabled virtualization in the BIOS, and that no conflicting
      virtualization schemes have been enabled (e.g. Windows Hyper-V)
   3. [WSL only] Add VirtualBox binaries to System PATH, found at
        System->Properties->Adv System Settings->Environment Variables...->System variables
-     The VirtualBox path is typically c:\Program Files\Oracle\VirtualBox, which you append to the System PATH.
+     The VirtualBox path is typically c:\Program Files\Oracle\VirtualBox, which you append to the
+     System PATH.
      
-     As discussed below, it's a good idea to locate the projects directory in, e.g., C:\Users\$LOGNAME\projects,
-     set a symlink from /home/$LOGNAME to that projects directory, set env vars also listed here, and specify metadata
-     on the mounted C: drive:
+     As discussed below, it's a good idea to locate the projects directory in, e.g.,
+     C:\Users\$LOGNAME\projects,
+     Set a symlink from /home/$LOGNAME to that projects directory, set env vars also listed here,
+     and specify metadata on the mounted C: drive:
      ```
      $ ln -s /mnt/c/Users/$LOGNAME/projects $HOME/projects
      $ echo "export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/$LOGNAME/projects" >>$HOME/.bashrc && source $HOME/.bashrc
@@ -139,13 +158,14 @@ $ source ./makeK8s.sh -s centos
      ```
   4. Install vagrant for Linux in bash (both Linux and Windows WSL). I used
      ```
-     $ wget https://releases.hashicorp.com/vagrant/2.2.3/vagrant_2.2.3_x86_64.deb
-     $ sudo apt-get install ./vagrant_2.2.3_x86_64.deb
+     $ wget https://releases.hashicorp.com/vagrant/2.2.4/vagrant_2.2.4_x86_64.deb
+     $ sudo apt-get install ./vagrant_2.2.4_x86_64.deb
      ```
-  5. Clone the ez-kubeadm project into your projects directory, e.g. $HOME/projects, to hold the ez-kubeadm files.
+  5. Clone ez-kubeadm into your projects directory, e.g. #HOME/projects/ez-kubeadm.
   6. Create a project directory specific to the new kubernetes cluster; e.g. $HOME/projects/ukube/.
-  7. Accept ez-kubeadm's default directory for kubeconfig files -- $HOME/.kube/config.d. This can be over-ridden
-     by using the "-o" option to makeK8s.sh. If you accept the default directory, create it:
+  7. Accept ez-kubeadm's default directory for kubeconfig files -- $HOME/.kube/config.d. This can be
+     over-ridden by using the "-o" option to makeK8s.sh. If you accept the default directory,
+     create it:
      ```
      $ mkdir -p $HOME/.kube/config.d
      ```
@@ -158,25 +178,27 @@ $ source ./makeK8s.sh -s centos
       ```
       $ cp ../ez-kubeadm/* .
       ```
-  11. Copy your id_rsa.pub file into the vagrant project folder (if needed, use "ssh-keygen -t rsa -b 4096 -f id_rsa" in
-      $HOME/.ssh)
+  11. Copy your id_rsa.pub file into the vagrant project folder
+      (if needed, use "ssh-keygen -t rsa -b 4096 -f id_rsa" in $HOME/.ssh)
       ```
       $ cp $HOME/.ssh/id_rsa.pub id_rsa.pub.$LOGNAME
       ```
-  12. Check the CPU/memory settings in the relevant Vagrantfile -- either Vagrantfile.ubuntu, or Vagrantfile.centos.
-      By default, nodes receive 2048MB memory, and 2 vCPUs.
-  13. Run "source ./makeK8s.sh" (Ubuntu), or "source ./makeK8s.sh -s centos" to create a new cluster
+  12. Consider the CPU/memory settings in the relevant Vagrantfile -- either Vagrantfile.ubuntu, or
+      Vagrantfile.centos.  By default, all nodes receive 2048MB of RAM, and 2 vCPUs.
+  13. Run "source ./makeK8s.sh", or "source ./makeK8s.sh -s centos" to create a new cluster
   
-NOTES  
+## Notes 
   1. Edits to the Vagrantfile (Vagrantfile.ubuntu or Vagrantfile.centos) should only be needed to:
      * change the memory or CPU settings for the nodes
      * change master and worker node IP addresses.
-       Ubuntu master IP is 192.168.205.10; worker node IPs immediately follow, i.e. node1 is 192.168.205.11
-       CentOS cmaster IP is 192.168.205.15; worker node IPs immediately follow, i.e. cnode1 is 192.168.205.16
+       Ubuntu master IP is 192.168.205.10; worker node IPs immediately follow, i.e. node1 is
+       192.168.205.11
+       CentOS cmaster IP is 192.168.205.15; worker node IPs immediately follow, i.e. cnode1 is
+       192.168.205.16
      * want more/fewer nodes? edit the servers array in the Vagrantfile.
 
-  2. To set the KUBECONFIG env var at any time, on any shell, cd to the project directory, and "source" the
-     script "setKubeConfigVar.sh":
+  2. To set the KUBECONFIG env var at any time, e.g. on a new shell instance, cd to the project
+     directory, and "source" the script, setKubeConfigVar.sh:
      ```
      $ source ./setKubeConfigVar.sh
      ```
@@ -194,66 +216,70 @@ NOTES
       ```
       $ kubectl config use-context <context-name>
       ```
-  6. I suggest adding the node names (master, node1, etc) to your hosts file. Actually, the some of the
-     bash script logic depends on it.
+  6. I suggest adding the node names (master, node1, etc) to your hosts file. Actually, the some of
+     the bash script logic depends on it.
      
-     In Windows, these changes are applied to the native Windows hosts file -- not /etc/hosts in bash.
-     The native Windows hosts file can be found at C:\Windows\system32\drivers\etc\hosts.
+     In Windows, these changes are applied to the native Windows hosts file -- not /etc/hosts in
+     bash. The native Windows hosts file can be found at C:\Windows\system32\drivers\etc\hosts.
+  7. When you are entirely finished with a cluster, the kubeconfig file will remain after its
+     destruction; as such, you will want to delete it from the directory where these files are kept
+     -- $HOME/.kube/config.d.
   
-## WSL Notes
+## WSL Notes (Windows 10's Linux environment):
 
 My development and testing were initially performed on Ubuntu 18 (Bionic). I later ported it to 
-Windows 10's WSL Ubuntu (bash) environment.
+Windows 10's WSL Ubuntu (bash) environment. Several changes were required to get things working on
+WSL -- some in the Vagrantfiles, some in the Windows environment.  Thankfully, the required file
+changes for WSL are compatible with native Ubuntu, so we don't need any Windows-specific files.
 
-Porting the project to Windows 10 WSL Ubundu, several changes were required to get things working -- some
-in the Vagrantfiles, some in the Windows environment.  Thankfully, the required file changes for WSL are 
-compatible with native Ubuntu, so we don't need any Windows-specific files.
-
-I've tried to capture all necessary steps here. I suggest reviewing: https://www.vagrantup.com/docs/other/wsl.html.
+I've tried to capture all necessary steps here.
+For more information, see: https://www.vagrantup.com/docs/other/wsl.html.
 
 Specific env vars and for Windows WSL:
-  1. Set your WSL project environment -- vagrant projects don't work well from /home/<user>. I suggest basing
-     your projects in, for example, /mnt/c/Users/<user>/projects, but use a symlink in a directory under your
-     home directly, as suggested here:
+  1. Set your WSL project environment -- vagrant projects don't work when housed directly within
+     the WSL filesystem (e.g. /home/$LOGNAME). I suggest basing your projects in, for example,
+     /mnt/c/Users/<user>/projects, but use a symlink in a directory under your home directly,
+     as suggested here:
        https://cepa.io/2018/02/20/linuxizing-your-windows-pc-part2/
      Let's make that more concrete:
-       My username is in $LOGNAME; $HOME is /home/$LOGNAME; my projects directory in Windows is
-       C:\Users\$LOGNAME\projects, where my vagrant project folders live. Assume that we want to access 
-       that directory from $HOME/projects. Use a symlink to accomplish this.
-       Make the vagrant project folders accessible from my $HOME directory:
+       My username for both Windows and WSL is $LOGNAME; $HOME is /home/$LOGNAME; my projects
+       directory in Windows is C:\Users\$LOGNAME\projects, where my vagrant project folders live.
+       Assume that we want to access that directory from $HOME/projects. Use a symlink to
+       accomplish this. Make the vagrant project folders accessible from my $HOME directory:
        ```
        ln -s /mnt/c/Users/$LOGNAME/projects $HOME/projects
        ```
-  * export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH, and append to .bashrc
-       Set the root path to your vagrant projects directory by exporting this env var, and append to .bashrc:
+  * Set the root path to your vagrant projects directory by exporting this env var, and append to .bashrc:
        ```
        echo "export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/$LOGNAME/projects" >>$HOME/.bashrc && source $HOME/.bashrc
        ```
-  * export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS, and append to .bashrc
-     ```
-     echo "export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1" >>$HOME/.bashrc
-     ```
+  * set VAGRANT_WSL_ENABLE_WINDOWS_ACCESS to 1, and append to .bashrc
+       ```
+       echo "export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1" >>$HOME/.bashrc && source $HOME/.bashrc
+       ```
   * To avoid rsync and vagrant ssh problems (e.g. "error when attempting to rsync a synced folder":
-     ```
-     echo "export VAGRANT_HOME=\"/home/$LOGNAME/.vagrant.d\"" >>$HOME/.bashrc && source $HOME/.bashrc
-     ```
-     Note: In Vagrantfile, I've added this line to avoid another rsync issue: config.ssh.insert_key = false
+       ```
+       echo "export VAGRANT_HOME=\"/home/$LOGNAME/.vagrant.d\"" >>$HOME/.bashrc && source $HOME/.bashrc
+       ```
+  * In Vagrantfile, I've added this line to avoid another rsync issue: config.ssh.insert_key = false
   2. C:\Windows\System32\drivers\etc\hosts file permissions -- user must have modify permission
      to avoid "Permission denied" for the vagrant hostsupdater plugin to work (it's not installed by
      VBox 5.2.x, but is in VBox 6.0.)
-  3. Mounted Windows partitions, e.g. C:, may ignore permissions set, for example, by chmod. Correct this
-      by re-mounting the volume, specifying "-o metadata", viz.:
+  3. Mounted Windows partitions, e.g. C:, may ignore permissions set, for example, by chmod. Correct
+     this by re-mounting the volume, specifying "-o metadata", viz.:
       ```
        $ sudo umount /mnt/c && sudo mount -t drvfs C: /mnt/c -o metadata
       ```
-      Also, the files in /mnt/c may all be owned by root. Adjust as needed.
-      For more, see https://blogs.msdn.microsoft.com/commandline/2018/01/12/chmod-chown-wsl-improvements/
-      Also: https://docs.microsoft.com/en-us/windows/wsl/wsl-config
-  4. With permissions changes enabled from bash (via metadata), tighten any ssh key permissions to avoid
-      problems: I set my keys as "chmod 644 id_rsa*"
+     Also, the files in /mnt/c may all be owned by root. Adjust as needed.
+     See https://blogs.msdn.microsoft.com/commandline/2018/01/12/chmod-chown-wsl-improvements/
+     See Also: https://docs.microsoft.com/en-us/windows/wsl/wsl-config
+  4. With permissions changes enabled from bash (via metadata), tighten any ssh key permissions to
+     avoid problems: I set my PKI keys as "chmod 644 id_rsa*"
+  5. vagrant is prone to throwing "Insecure world writable dir" errors. I tend to use
+     "chmod 755 <dir>" to correct these, which seems to work fine.
 
-That's it for the setup.  Here are some further WSL notes, which describe some issues I've encountered;
-they have all been addressed by the files in our repo:
+That's it for the setup.  Here are some further WSL notes, which describe some issues I've
+encountered; they have all been addressed by the files in our repo:
   1. There is a problem with some Ubuntu box versions on VM spinup:
         "rawfile#0 failed to create the raw output file VERR_PATH_NOT_FOUND".
      The error can be avoided by adding this line to the Vagrantfile:
@@ -261,48 +287,54 @@ they have all been addressed by the files in our repo:
        vb.customize [ 'modifyvm', :id, '--uartmode1', 'disconnected']
        ```
   2. I've observed no need to run as administrator -- neither bash, or VBox Manager
-  3. When this group of files is pulled down from github, they may arrive as DOS-formatted files, which
-     causes runtime errors.  Install and use dos2unix utility to modify the shell scripts, to correct.
-  4. I've had problems with VMs (Xenial) booting extremely slowly with VBox 6.0, while v5.2.26 works great.
-      see https://github.com/hashicorp/vagrant/issues/10578, for a discussion of this issue.
+  3. When this group of files is pulled down from github, they may arrive as DOS-formatted files,
+     which causes runtime errors.  Install and use dos2unix utility to modify the shell scripts, to
+     correct.
+  4. I've had problems with VMs (Xenial) booting extremely slowly with VBox 6.0, while v5.2.26
+     works great. see https://github.com/hashicorp/vagrant/issues/10578, for a discussion of this
+     issue.
   5. Another VBox 6.0 issue: Centos cluster VMs don't come up under VBox 6.0 either -- the master node
-      boots fine, but the next VM (cnode1) fails to spin up.
-  6. Side note on VBox 6.0: Windows UAC will trigger when the hostupdater (a vagrant plugin) tries to update
-      the hosts file.
+     boots fine, but the next VM (cnode1) fails to spin up.
+  6. Side note on VBox 6.0: Windows UAC will trigger when the hostupdater (a vagrant plugin) tries
+     to update the hosts file.
   7. In short, avoid VBox 6.0.
  
 ## Repo Files and Network Notes:
 
 These are the files included in the repo:
-  * makeK8s.sh (wrapper)
-  * Vagrantfiles (Vagrantfile.centos and Vagrantfile.ubuntu -- one of which is copied to Vagrantfile at runtime.
-  * post-k8s.sh (make account for host user on nodes, prepare to pull kube config file, admin.conf)
-  * pull-k8s-admin.sh (download admin.conf from master, for use on host)
-  * modKubeConfigFile.sh (process admin.conf file, extracting PKI data, collecting kubeconfig files)
-  * setKubeConfigVar.sh (consolidate multi-cluster configs into KUBECONFIG env var)
-  * copy public key for a desired host user account. E.g., I am on my host, and want to ssh
-    to any node as <username>. I copy my id_rsa.pub file into the vagrant project directory, for scripted
-    install on nodes
+  * makeK8s.sh           -- wrapper
+  * Vagrantfiles         -- Vagrantfile.centos and Vagrantfile.ubuntu -- one of which is copied to
+                            Vagrantfile at runtime.
+  * post-k8s.sh          -- make account for host user on nodes, prepare to pull kube config file,
+                            admin.conf
+  * pull-k8s-admin.sh    -- download admin.conf from master, for use on host
+  * modKubeConfigFile.sh -- process admin.conf file, extracting PKI data, massage naming, and save
+                            in directory with other kubeconfig files
+  * setKubeConfigVar.sh -- consolidate multi-cluster configs into KUBECONFIG env var
+  
   The modified network CNI YAML files are included in this repository. They are:
-  * canal2.yaml, canal2c.yaml (canal2 for Ubuntu, canal2c for CentOS),
-  * kube-flannel.yaml, kube-flannelc.yaml,
+  * canal2.yaml, canal2c.yaml -- canal2 for Ubuntu, canal2c for CentOS
+  * kube-flannel.yaml, kube-flannelc.yaml
   * romana-kubeadm.yaml
 
-These network CNI's all seem to work well -- feel free to use any of them.  Any quirks have been addressed in the
-Vagrantfiles and YAML:
+These network CNI's all seem to work well -- feel free to use any of them.  Any quirks have been
+addressed in the Vagrantfiles and YAML:
   * calico:    Simply works.
   * weave:     Worker nodes require a static route to the master node (applied by Vagrantfile)
   * romana:    Seems to require romana-agent daemonset tolerance for not-ready nodes
-  * flannel:   Its yaml must be tweaked to use enp0s8(Ubuntu) or eth1(CentOS) host-only interface, not the NAT'd one
-  * canal      Its yaml must be tweaked to use enp0s8(Ubuntu) or eth1(CentOS) host-only interface, not the NAT'd one
+  * flannel:   Its yaml must be tweaked to use enp0s8(Ubuntu) or eth1(CentOS) host-only interface,
+               not the NAT'd one
+  * canal      Its yaml must be tweaked to use enp0s8(Ubuntu) or eth1(CentOS) host-only interface,
+               not the NAT'd one
 
 Calico and Weave need no YAML mods.
-Weave, however, requires a route to be set for worker nodes to find the master (corrected in Vagrantfile).
+Weave, however, requires a route to be set for worker nodes to find the master (corrected in
+Vagrantfile).
 Canal, Flannel, and Romana require minor mods their YAML; e.g. use 2nd network adapter (enp0s8/eth1).
 
 Romana curiously seems to present a catch-22: romana-agent won't install on "not-ready" nodes,
-but the nodes can only become ready when romana-agent is up and running. My solution: add tolerance for
-nodes that are not-ready (applied to the romana-agent daemonset YAML).
+but the nodes can only become ready when romana-agent is up and running. My solution: add tolerance
+for nodes that are not-ready (applied to the romana-agent daemonset YAML).
 
 ## SSH key handling
 
@@ -310,12 +342,13 @@ In building the worker nodes, We run a script on each of the nodes to scp the ku
 from the master node (where kubeadm places it, while building the master node).
 This allows automation of the nodes joining the kubernetes cluster.
 
-To use scp, we use the aforementioned key pair for the vagrant user on each of the nodes,
-in /home/vagrant/.ssh
+To use scp, we use the aforementioned key pair for the vagrant user on each of the nodes, in 
+/home/vagrant/.ssh
 On the master, we also need to add the vagrant pub-key into the master's authorized_keys file, in
 /home/vagrant/.ssh/authorized_keys
 
 Thankfully, the project directory is automatically mounted onto each node by Vagrant, at /vagrant.
 Therefore, the SSH keys of interest are accessible by all our Vagrant VMs, at that location.
 
-NOTE: The mount is only automatic during node creation, and must be re-mounted manually if the node reboots.
+NOTE: The mount is only automatic during node creation, and must be re-mounted manually if the node
+reboots.
