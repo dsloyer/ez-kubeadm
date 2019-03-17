@@ -187,7 +187,11 @@ commands I've detailed just below.
       Vagrantfile.centos.  By default, all nodes receive 2048MB of RAM, and 2 vCPUs.
       If you want to change them, add a parameter for the desired change in the next step. E.g, if
       you want 3 vCPUs and 4GB of memory, add "-c 3 -m 4096" to the command below.
-  13. Run "source ./makeK8s.sh", or "source ./makeK8s.sh -s centos" to create a new cluster
+  13. The IP address of the master node can be changed by using the "-i" option with the command to
+      makeK8s.sh; e.g. "-i 192.147.233.30".  Avoid using a master IP that ends with a digit higher
+      than 7, or the IP addresses may not be monotonically increasing (e.g. master: 192.168.50.68,
+      node1: 192.168.50.69, node2: 192.168.50.60).
+  14. Run "source ./makeK8s.sh", or "source ./makeK8s.sh -s centos" to create a new cluster
   
 ## Notes 
   1. Edits to the Vagrantfile (Vagrantfile.ubuntu or Vagrantfile.centos) should only be needed to:
