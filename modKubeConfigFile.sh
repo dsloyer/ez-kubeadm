@@ -136,8 +136,8 @@ sed -i "/certificate-authority/c\    certificate-authority: $ca_path" $fPath
 # replace the cluster and context names with new preferred names (all derived from the project name):
 sed -i "/  name: kubernetes$/c\  name: $proj-clu"             $fPath
 sed -i "/    cluster: kubernetes/c\    cluster: $proj-clu"    $fPath
-sed -i "/  name: kubernetes-admin@kubernetes/c\  name: $proj" $fPath
-sed -i "/current-context: kubernetes-admin@kubernetes/c\current-context: $proj" $fPath
+sed -i "/  name: kubernetes-admin@kubernetes/c\  name: \"$proj\"" $fPath
+sed -i "/current-context: kubernetes-admin@kubernetes/c\current-context: \"$proj\"" $fPath
 sed -i "/    user: kubernetes-admin/c\    user: $proj-admin"  $fPath
 sed -i "/- name: kubernetes-admin/c\- name: $proj-admin"      $fPath
 
