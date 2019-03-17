@@ -45,10 +45,12 @@ end
 
 # Install Ubuntu on all nodes
 # Box-specific settings
-$grpSuffix   = " - Ubuntu"
+$proj        = "proj"
 $box         = "ubuntu/xenial64"
 $boxVer      = "20190308.0.0"
 $hostAdapter = "enp0s8"
+$cpu         = "2"
+$mem         = "2048"
 
 # Set the desired IP address of the master node, from which node IPs will follow
 $masterIp    = "192.168.205.10"
@@ -99,31 +101,31 @@ $weave = "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base
 # servers is a list of the VMs to be instantiated and configured by this script
 servers = [
   {
-    :name => "master",
+    :name => "#{$proj}-master",
     :type => "master",
     :box => $box,
     :box_version => $boxVer,
     :eth1 => $masterIp,
-    :mem => "2048",
-    :cpu => "2"
+    :mem => $mem,
+    :cpu => $cpu
   },
   {
-    :name => "node1",
+    :name => "#{$proj}-node1",
     :type => "node",
     :box => $box,
     :box_version => $boxVer,
     :eth1 => $masterIp.succ,
-    :mem => "2048",
-    :cpu => "2"
+    :mem => $mem,
+    :cpu => $cpu
   },
   {
-    :name => "node2",
+    :name => "#{$proj}-node2",
     :type => "node",
     :box => $box,
     :box_version => $boxVer,
     :eth1 => $masterIp.succ.succ,
-    :mem => "2048",
-    :cpu => "2"
+    :mem => $mem,
+    :cpu => $cpu
   }
 ]
 
@@ -370,7 +372,7 @@ Vagrant.configure("2") do |config|
       config.vm.network :private_network, ip: opts[:eth1]
       config.vm.provider "virtualbox" do |vb|
         vb.name = opts[:name]
-        vb.customize ["modifyvm", :id, "--groups", "/Kubernetes #{$grpSuffix}"]
+        vb.customize ["modifyvm", :id, "--groups", "/#{$proj}"]
         vb.customize ["modifyvm", :id, "--memory",  opts[:mem]]
         vb.customize ["modifyvm", :id, "--cpus",    opts[:cpu]]
         # The following avoids errors when WSL tries to open logfile when creating Ubuntu/Xenial

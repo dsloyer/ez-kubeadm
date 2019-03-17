@@ -15,19 +15,17 @@
 # Why do this?  To provide a config file to use when you want to run kubectl on the host,
 # as myself, .against the new cluster.
 
-pgm=$(basename $0)
-
 usage () {
-  echo "usage: $pgm -s centos | ubuntu" >&2
+  echo "usage: pull-k8s-admin -i masterIp" >&2
   exit $1
 }
 
 echo "LOGNAME: $LOGNAME"
 
-while getopts s: opt; do
+while getopts i: opt; do
   case $opt in
-    s)
-      os=$OPTARG
+    i)
+      masterIp=$OPTARG
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -40,18 +38,6 @@ while getopts s: opt; do
   esac
 done
 
-if [[ "$os" = "" ]]; then
-  echo "$pgm: ERROR: no operating system specified."
-  usage 1
-elif [[ "$os" = "centos" ]]; then
-  echo "$pgm: Using CentOS"
-elif [[ "$os" = "ubuntu" ]]; then
-  echo "$pgm: Using Ubuntu"
-else
-  echo "$pgm: ERROR: unknown operating system specified."
-  usage 1
-fi
-
 # The following steps are perform some useful cleanuip when new cluster instances
 # are created.
 #
@@ -61,14 +47,14 @@ fi
 #   Windows: C:\Windows\System32\drivers\etc\hosts
 #
 echo "remove old Ubuntu host keys (if any)"
-ssh-keygen -f ~/.ssh/known_hosts -R "master"
-ssh-keygen -f ~/.ssh/known_hosts -R "node1"
-ssh-keygen -f ~/.ssh/known_hosts -R "node2"
+ssh-keygen -f ~/.ssh/known_hosts -R "ukube-master"
+ssh-keygen -f ~/.ssh/known_hosts -R "ukube-node1"
+ssh-keygen -f ~/.ssh/known_hosts -R "ukube-node2"
 
 echo "remove old CentOS host keys (if any)"
-ssh-keygen -f ~/.ssh/known_hosts -R "cmaster"
-ssh-keygen -f ~/.ssh/known_hosts -R "cnode1"
-ssh-keygen -f ~/.ssh/known_hosts -R "cnode2"
+ssh-keygen -f ~/.ssh/known_hosts -R "ckube-master"
+ssh-keygen -f ~/.ssh/known_hosts -R "ckube-node1"
+ssh-keygen -f ~/.ssh/known_hosts -R "ckube-node2"
 
 # NOTE: Later, when ssh'ing to a node, you might get notice of an "Offending key" in the known_hosts file.
 # They are complaining that a host with that IP address is already present in the known_hosts file.
@@ -88,26 +74,9 @@ ssh-keygen -f ~/.ssh/known_hosts -R "cnode2"
 # to ~/.ssh/config:
 #   UserKnownHostsFile=/dev/null
 
-# Here, I've used hard-coded names from the Vagrantfiles
-if [[ "$os" = "centos" ]]; then
-  master=cmaster
-else
-  master=master
-fi
-
-# get the current project directory path, then strip away all but the last
-dir="$(basename $(pwd))"
-echo "project directory: $dir"
-
 # pull down the kubernetes admin.conf file from the new master node to the current directory
-while true; do
-  scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $LOGNAME@$master:/home/$LOGNAME/admin.conf .
-  if [[ $? -eq 0 ]]; then
-    echo "scp attempt to pull admin.conf file gave no error"
-    break
-  else
-    echo "scp attempt to pull admin.conf file failed"
-    sleep 10
-  fi
-done
+scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $LOGNAME@$masterIp:/home/$LOGNAME/admin.conf .
+if [[ $? -eq 0 ]]; then
+  echo "scp attempt to pull admin.conf file gave no error"
+fi
 

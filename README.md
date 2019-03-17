@@ -185,6 +185,8 @@ commands I've detailed just below.
       ```
   12. Consider the CPU/memory settings in the relevant Vagrantfile -- either Vagrantfile.ubuntu, or
       Vagrantfile.centos.  By default, all nodes receive 2048MB of RAM, and 2 vCPUs.
+      If you want to change them, add a parameter for the desired change in the next step. E.g, if
+      you want 3 vCPUs and 4GB of memory, add "-c 3 -m 4096" to the command below.
   13. Run "source ./makeK8s.sh", or "source ./makeK8s.sh -s centos" to create a new cluster
   
 ## Notes 
