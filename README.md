@@ -4,8 +4,8 @@ This project has a simple aim: make is easy to create multi-node Kubernetes clus
 environment, with a single command.  Also, to supports several clusters, and easy switching between
 them.
 
-Why use this project and not another?  Because the steps are clear and uncomplicated -- maybe you
-will find it easy for you, as well.  My interest, beyond taking it as a modest "Infrastructure as
+Why use this project and not another?  Because the steps are clear and uncomplicated (for me)-- maybe
+you will find it easy for you, as well.  My interest, beyond taking it as a modest "Infrastructure as
 Code" personal challenge, was to:
 * Avoid a sometimes complex, often confusing, process of deployment via other solutions.
 * Applying a "canonical" Kubernetes deployment solution, kubeadm, whose steps can be easily seen
@@ -15,8 +15,8 @@ Code" personal challenge, was to:
   (kubeadm, CRI, CNI, etc), to a single command.
 * Implement it such that discarding, and recreating, a working cluster is trivial, reliable, and
   fast.
-* Document the tools, applications needed (where to find, what, and how, to install).
-* Report the issues discovered in the development process, and catalogue their resolution.
+* Document the tools, applications needed (what, where to find, what, to install).
+* Gather issues observed in testing, and catalogue their resolution.
 * Support both Linux and Windows 10 WSL (Windows Subsystem for Linux) hosts.
 * Package it as a small bundle of files.
 
@@ -195,8 +195,8 @@ commands I've detailed just below.
   
 ## Notes 
   1. Edits to the Vagrantfile (Vagrantfile.ubuntu or Vagrantfile.centos) should only be needed to:
-     * change the memory or CPU settings for the nodes
-     * change master and worker node IP addresses.
+     * make permanent changes to default memory or CPU settings for the nodes
+     * make permanent changes to the default IP addresses.
        Ubuntu master IP is 192.168.205.10; worker node IPs immediately follow, i.e. node1 is
        192.168.205.11
        CentOS cmaster IP is 192.168.205.15; worker node IPs immediately follow, i.e. cnode1 is
@@ -229,7 +229,10 @@ commands I've detailed just below.
      bash. The native Windows hosts file can be found at C:\Windows\system32\drivers\etc\hosts.
   7. When you are entirely finished with a cluster, the kubeconfig file will remain after its
      destruction; as such, you will want to delete it from the directory where these files are kept
-     -- $HOME/.kube/config.d.
+     -- $HOME/.kube/config.d (default).  Otherwise, kubectl will continue to present the deleted cluster
+     to you.
+  8. When the preferred host user account is created on the k8s master and nodes, the accounts password
+     is set (needed for sudo).  The password is set to "qwerty0987".
   
 ## WSL Notes (Windows 10's Linux environment):
 
