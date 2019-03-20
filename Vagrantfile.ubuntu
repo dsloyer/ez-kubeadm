@@ -18,7 +18,8 @@
 #       i.e. node1 is 192.168.205.11
 #       CentOS cmaster IP is 192.168.205.15; worker node IPs immediately follow,
 #       i.e. cnode1 is 192.168.205.16
-#     * want more/fewer nodes? edit the servers array in the Vagrantfile.
+#     * edit the servers array to add/remove nodes
+#     * Changing the pod-network-cidr settings to, e.g., avoid collisions with other networks
 # 
 
 # pull desired network from ENV, if defined; if not, default to calico
@@ -36,7 +37,8 @@ if    $net == "flannel"
 elsif $net == "canal"
   $netCidr = "--pod-network-cidr=10.244.0.0/16"
 elsif $net == "calico"
-  $netCidr = "--pod-network-cidr=192.168.0.0/16"
+  # change calico default pod network to avoid overlap with host network
+  $netCidr = "--pod-network-cidr=192.200.0.0/16"
 elsif $net == "weave"
   $netCidr = ""
 elsif $net == "romana"
@@ -266,19 +268,21 @@ $configureMaster = <<SCRIPT
   IP_ADDR=`ip addr show dev #{$hostAdapter} | grep -i "inet " | awk '{print $2}' | cut -f1 -d/`
   echo "host adapter, #{$hostAdapter}, has address $IP_ADDR"
 
-  HOST_NAME=$(hostname -s)
-
   echo "Running kubeadm init -- creating cluster"
   cmd="kubeadm init --apiserver-advertise-address=$IP_ADDR #{$netCidr}"
   echo "cmd: $cmd"
   $cmd
 
+  echo "Configure local vagrant user for kubectl, by populating $HOME/.kube/config for him"
   sudo --user=vagrant mkdir -p /home/vagrant/.kube
   cp -i /etc/kubernetes/admin.conf /home/vagrant/.kube/config
   chown $(id -u vagrant):$(id -g vagrant) /home/vagrant/.kube/config
 
   echo "Defined KUBECONFIG, which kubectl uses to obtain vital cluster information"
   export KUBECONFIG=/etc/kubernetes/admin.conf
+
+  echo "Allow master to run pods by removing NoSchedule taint"
+  kubectl taint nodes $(hostname) node-role.kubernetes.io/master:NoSchedule-
 
   echo "Install network for our cluster"
   if [[ #{$net} = "flannel" ]]; then
