@@ -4,10 +4,10 @@ This project has a simple aim: make is easy to create multi-node Kubernetes clus
 environment, with a single command.  Also, to supports several clusters, and easy switching between
 them.
 
-Why use this project and not another?  Because the steps are clear and uncomplicated (for me)-- maybe
-you will find it easy for you, as well.  My interest, beyond taking it as a modest "Infrastructure as
+Why use this project?  Because the steps are clear and simple, removing, as far as
+possible, all guesswork and risk.  My interest, beyond taking it as a modest "Infrastructure as
 Code" personal challenge, was to:
-* Avoid a sometimes complex, often confusing, process of deployment via other solutions.
+* Avoid a sometimes fragmented, often confusing, process of deployment via other solutions.
 * Applying a "canonical" Kubernetes deployment solution, kubeadm, whose steps can be easily seen
   to be consistent with the steps appearing in kubernetes.io for kubeadm (actually copied/pasted
   from there, whenever possible).
@@ -21,11 +21,11 @@ Code" personal challenge, was to:
 * Package it as a small bundle of files.
 
 What's the downside?
-* Your environment may be different than mine, causing you to encounter problems that I've promised
-  you would be avoiding.  Sorry if that occurs.
-* You may not agree with the tools I specify, or the changes suggested in your environment
-* You may feel limited by my choice of operating systems, cluster configuration, etc. (Let me know).
-* This project may fall behind kubeadm advances/changes in kubernetes.io.  C'est la vie.
+* Your environment may be different than mine, causing you to encounter problems that I've promised you
+  would avoid.
+* You may not agree with the tools I specify, or the changes suggested in your environment, though few.
+* You may feel limited by my choice of operating systems, cluster configuration, etc.
+* This project may fall behind kubeadm advances/changes in kubernetes.io.
 
 All the files that comprise this project are in https://github.com/dsloyer/ez-kubeadm
 
@@ -40,7 +40,7 @@ All the files that comprise this project are in https://github.com/dsloyer/ez-ku
   an SSH public key down to each node.
 
 The Kubernetes master and worker node VMs can be either Ubuntu (by default; CentOS is easily selected
-  via runtime parameter).
+via runtime parameter).  Memory and CPU settings are also parameterized.
 
 Currently supporting any of five networking alternatives, a CNI network is selected via environment
 variable -- one of {calico, canal, flannel, romana, weave}.  Calico is deployed by default.  You may
@@ -84,10 +84,10 @@ About 10 minutes later, the cluster is up and ready to use:
 $ kubectl config use-context ukube
 Switched to context "ukube".
 $ kubectl get nodes
-NAME     STATUS   ROLES    AGE     VERSION
-master   Ready    master   5m41s   v1.13.4
-node1    Ready    <none>   3m8s    v1.13.4
-node2    Ready    <none>   21s     v1.13.4                                                                             
+NAME           STATUS   ROLES    AGE     VERSION
+ukube-master   Ready    master   5m41s   v1.13.4
+ukube-node1    Ready    <none>   3m8s    v1.13.4
+ukube-node2    Ready    <none>   21s     v1.13.4                                                                             
 ```
 Let's change directory, spin up a BusyBox container on each node as a daemonset (ds-bb.yaml not
 shown here), ssh to the master node, and list the running pods:
@@ -105,21 +105,26 @@ Welcome to Ubuntu 16.04.6 LTS (GNU/Linux 4.4.0-142-generic x86_64)
 --- some text removed ---
 
 username@master:~$ kubectl get po -o wide
-NAME       READY   STATUS    RESTARTS   AGE   IP            NODE     NOMINATED NODE   READINESS GATES
-bb-2jc26   1/1     Running   0          32s   192.168.0.5   master   <none>           <none>
-bb-7xhkx   1/1     Running   0          32s   192.168.1.3   node1    <none>           <none>
-bb-d684p   1/1     Running   0          32s   192.168.2.4   node2    <none>           <none>
+NAME       READY   STATUS    RESTARTS   AGE   IP            NODE           NOMINATED NODE   READINESS GATES
+bb-2jc26   1/1     Running   0          32s   192.168.0.5   ukube-master   <none>           <none>
+bb-7xhkx   1/1     Running   0          32s   192.168.1.3   ukube-node1    <none>           <none>
+bb-d684p   1/1     Running   0          32s   192.168.2.4   ukube-node2    <none>           <none>
 ```
 Destroy the cluster by cd'ing into the project folder for the cluster, then run:
 ```
 $ cd $HOME/projects/ukube
 $ vagrant destroy -f
 ```
+To create a cluster configured thusly:
+ * CentOS OS,
+ * Flannel networking,
+ * node IPs starting from 185.333.44.50,
+ * 3 cpus, and
+ * 4096MB memory
 
-To create a cluster built from CentOS and Flannel networking:
+then apply the following parameter values to the command:
 ```
-$ export k8snet=flannel
-$ source ./makeK8s.sh -s centos
+$ source ./makeK8s.sh -s centos -n flannel -i 182.333.44.50 -c 3 -m 4096
 ```
 
 ## Setup Instructions:
@@ -215,7 +220,6 @@ commands I've detailed just below.
      $ kubectl config get-contexts
      CURRENT   NAME       CLUSTER     AUTHINFO      NAMESPACE
                ckube      ckube-clu   ckube-admin
-               minikube   minikube    minikube
      *         ukube      ukube-clu   ukube-admin
      ```
   5. Select context (project name) using
