@@ -20,13 +20,6 @@ Code" personal challenge, was to:
 * Support both Linux and Windows 10 WSL (Windows Subsystem for Linux) hosts.
 * Package it as a small bundle of files.
 
-What's the downside?
-* Your environment may be different than mine, causing you to encounter problems that I've promised you
-  would avoid.
-* You may not agree with the tools I specify, or the changes suggested in your environment, though few.
-* You may feel limited by my choice of operating systems, cluster configuration, etc.
-* This project may fall behind kubeadm advances/changes in kubernetes.io.
-
 All the files that comprise this project are in https://github.com/dsloyer/ez-kubeadm
 
 ## Overview
@@ -34,10 +27,9 @@ All the files that comprise this project are in https://github.com/dsloyer/ez-ku
 * Vagrant installs and configures the Ubuntu/CentOS boxes on VirtualBox.
 * Bash scripts manage the process, perform further operations on the cluster nodes, providing a
   seamless experience.
-* To better support multiple kubernetes configurations, we modify the kubeconfig files, gather them
-  in a single directory, and set the KUBECONFIG env var based on the contents of that directory.
-* I like to ssh directly into the cluster from any directory on my host, which is enabled by pushing
-  an SSH public key down to each node.
+* To better support multiple kubernetes configurations, we gather the kubeconfig files generated
+  by kubeadm in a single directory, and set the KUBECONFIG env var based on the contents of that
+  directory.
 
 The Kubernetes master and worker node VMs can be either Ubuntu (by default; CentOS is easily selected
 via runtime parameter).  Memory and CPU settings are also parameterized.
@@ -73,6 +65,15 @@ $ mkdir ukube && cd ukube
 $ vagrant init
 $ cp ../ez-kubeadm/* .
 $ cp $HOME/.ssh/id_rsa.pub id_rsa.pub.$LOGNAME
+$ source ./makeK8s.sh -h
+usage: source ./makeK8s.sh [-h][-s centos | ubuntu][-o destDir][-m memSize][-c cpuCnt][-i masterIp][-n network][-t]                                                                                                                                 options:
+  -s specifies either CentOS or Ubuntu nodes
+  -o specifies the destination directory, where kubeconfig files are being collected
+  -m specifies how many GB memory for each VM
+  -c specifies how many vCPUs for each VM
+  -i specifies master IP address
+  -n specifies network, one of calico, canal, flannel, romana, weave
+  -t test only (dry run)
 ```
 You're ready to create a cluster, or destroy and recreate an Ubuntu-based Kubernetes cluster,
 anytime, from this directory, with a single command:
@@ -89,12 +90,11 @@ ukube-master   Ready    master   5m41s   v1.13.4
 ukube-node1    Ready    <none>   3m8s    v1.13.4
 ukube-node2    Ready    <none>   21s     v1.13.4                                                                             
 ```
-Let's change directory, spin up a BusyBox container on each node as a daemonset (ds-bb.yaml not
-shown here), ssh to the master node, and list the running pods:
+Let's change directory, spin up an nginx container pod, ssh to the master node, and list the running pods:
 ```
 $ cd $HOME/test
-$ kubectl create -f ds-bb.yaml
-daemonset.apps/bb created
+$ kubectl run nginx --restart=Never --image=nginx
+pod/nginx created
 
 $ ssh master
 The authenticity of host 'master (192.168.205.10)' can't be established.
@@ -105,24 +105,19 @@ Welcome to Ubuntu 16.04.6 LTS (GNU/Linux 4.4.0-142-generic x86_64)
 --- some text removed ---
 
 username@master:~$ kubectl get po -o wide
-NAME       READY   STATUS    RESTARTS   AGE   IP            NODE           NOMINATED NODE   READINESS GATES
-bb-2jc26   1/1     Running   0          32s   192.168.0.5   ukube-master   <none>           <none>
-bb-7xhkx   1/1     Running   0          32s   192.168.1.3   ukube-node1    <none>           <none>
-bb-d684p   1/1     Running   0          32s   192.168.2.4   ukube-node2    <none>           <none>
 ```
 Destroy the cluster by cd'ing into the project folder for the cluster, then run:
 ```
 $ cd $HOME/projects/ukube
 $ vagrant destroy -f
 ```
-To create a cluster configured thusly:
+To create a cluster configured with these parameter settings:
  * CentOS OS,
  * Flannel networking,
- * node IPs starting from 185.333.44.50,
+ * node IPs starting from 182.333.44.50,
  * 3 cpus, and
  * 4096MB memory
-
-then apply the following parameter values to the command:
+apply the following parameter values in the call to makeK8s:
 ```
 $ source ./makeK8s.sh -s centos -n flannel -i 182.333.44.50 -c 3 -m 4096
 ```
@@ -222,21 +217,28 @@ commands I've detailed just below.
                ckube      ckube-clu   ckube-admin
      *         ukube      ukube-clu   ukube-admin
      ```
-  5. Select context (project name) using
+  5. If you want multiple Ubuntu-based clusters to exist at the same time, then you must either
+     explicitly set the IP address of the master node, or ensure that only one of the clusters is
+     running at any given moment (to avoid IP address conflicts).
+  6. Select context (project name) using
       ```
       $ kubectl config use-context <context-name>
       ```
-  6. I suggest adding the node names (master, node1, etc) to your hosts file. Actually, the some of
-     the bash script logic depends on it.
+  7. I suggest adding the node names (master, node1, etc) to your hosts file.
      
      In Windows, these changes are applied to the native Windows hosts file -- not /etc/hosts in
      bash. The native Windows hosts file can be found at C:\Windows\system32\drivers\etc\hosts.
-  7. When you are entirely finished with a cluster, the kubeconfig file will remain after its
+  8. When you are entirely finished with a cluster, the kubeconfig file will remain after its
      destruction; as such, you will want to delete it from the directory where these files are kept
      -- $HOME/.kube/config.d (default).  Otherwise, kubectl will continue to present the deleted cluster
      to you.
   8. When the preferred host user account is created on the k8s master and nodes, the accounts password
      is set (needed for sudo).  The password is set to "qwerty0987".
+  9. By default, the master node's taint against running pods is removed.
+  10. I like to ssh directly into the cluster from any directory on my host.  These scripts support this by
+      pushing an SSH public key down to each node.
+
+
   
 ## WSL Notes (Windows 10's Linux environment):
 
