@@ -15,6 +15,8 @@
 # Why do this?  To provide a config file to use when you want to run kubectl on the host,
 # as myself, .against the new cluster.
 
+masterIp=""
+
 usage () {
   echo "usage: pull-k8s-admin -i masterIp" >&2
   exit $1
@@ -37,6 +39,18 @@ while getopts i: opt; do
       ;;
   esac
 done
+
+if [[ $masterIp == "" ]]; then
+  echo "ERROR: masterIp not set"
+  usage 1
+fi
+
+echo "pull-k8s-admin: masterIp: $masterIp"
+
+if [[ -f admin.conf ]]; then
+  echo "Removing existing admin.conf file(s)"
+  rm admin.conf*
+fi
 
 # The following steps are perform some useful cleanuip when new cluster instances
 # are created.
@@ -75,8 +89,12 @@ ssh-keygen -f ~/.ssh/known_hosts -R "ckube-node2"
 #   UserKnownHostsFile=/dev/null
 
 # pull down the kubernetes admin.conf file from the new master node to the current directory
-scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $LOGNAME@$masterIp:/home/$LOGNAME/admin.conf .
+cmd="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $LOGNAME@$masterIp:/home/$LOGNAME/admin.conf ."
+echo "cmd: \"$cmd\""
+$cmd
 if [[ $? -eq 0 ]]; then
   echo "scp attempt to pull admin.conf file gave no error"
+else
+  echo "pull-k8s-admin: ERROR scp failed"
 fi
 

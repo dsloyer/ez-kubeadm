@@ -22,12 +22,19 @@
 #     * Changing the pod-network-cidr settings to, e.g., avoid collisions with other networks
 # 
 
-# pull desired network from ENV, if defined; if not, default to calico
-$net=ENV['k8snet']
-if $net.to_s.strip.empty?
-  # default to calico
-  $net = "calico"
-end
+# Install CentOS on all nodes
+# Box-specific settings
+$proj        = "proj"
+$box         = "centos/7"
+$boxVer      = "1902.01"
+$hostAdapter = "eth1"
+
+# Default values, for configurable parameters
+$cpu         = "2"
+$mem         = "2048"
+$net         = "calico"
+$masterIp    = "192.168.205.15"
+
 
 # Set CIDR, as prescribed by kubernetes.io/docs/setup/independent/create-cluster-kubeadm
 # These CIDR values agree with the values assumed in the respective YAML files, avoiding
@@ -44,18 +51,6 @@ elsif $net == "weave"
 elsif $net == "romana"
   $netCidr = ""
 end
-
-# Install CentOS on all nodes
-# Box-specific settings
-$proj        = "proj"
-$box         = "centos/7"
-$boxVer      = "1902.01"
-$hostAdapter = "eth1"
-$cpu         = "2"
-$mem         = "2048"
-
-# Set the desired IP address of the master node, from which node IPs will follow
-$masterIp    = "192.168.205.15"
 
 # RPM-based systems use /etc/sysconfig/kubelet
 # see https://kubernetes.io/docs/setup/independent/kubelet-integration
@@ -114,7 +109,7 @@ servers = [
   {
     :name => "#{$proj}-node1",
     :type => "node",
-    :box => $box,
+    :box  => $box,
     :box_version => $boxVer,
     :eth1 => $masterIp.succ,
     :mem  => $mem,
@@ -123,7 +118,7 @@ servers = [
   {
     :name => "#{$proj}-node2",
     :type => "node",
-    :box => $box,
+    :box  => $box,
     :box_version => $boxVer,
     :eth1 => $masterIp.succ.succ,
     :mem  => $mem,
@@ -264,8 +259,6 @@ $configureMaster = <<SCRIPT
   # Fetch IP address of this box from the host network adapter info, as above
   IP_ADDR=`ip addr show dev #{$hostAdapter} | grep -i "inet " | awk '{print $2}' | cut -f1 -d/`
   echo "host adapter, #{$hostAdapter}, has address $IP_ADDR"
-
-  HOST_NAME=$(hostname -s)
 
   echo "Running kubeadm init -- creating cluster"
   cmd="kubeadm init --apiserver-advertise-address=$IP_ADDR #{$netCidr}"

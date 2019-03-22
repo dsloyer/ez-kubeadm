@@ -8,7 +8,7 @@ if [ "$_" == "${BASH_SOURCE}" ]; then
 fi
 
 usage () {
-  echo "usage: source ./makeK8s.sh [-s centos | ubuntu][-o destDir][-m memSize][-c cpuCnt][-i masterIp]" >&2
+  echo "usage: source ./makeK8s.sh [-s centos | ubuntu][-o destDir][-m memSize][-c cpuCnt][-i masterIp][-n network][-t]" >&2
   echo ""
   echo "options:"
   echo " -s specifies either CentOS or Ubuntu nodes"
@@ -16,6 +16,8 @@ usage () {
   echo " -m specifies how many GB memory for each VM"
   echo " -c specifies how many vCPUs for each VM"
   echo " -i specifies master IP address"
+  echo " -n specifies network, one of calico, canal, flannel, romana, weave"
+  echo " -t test only (dry run)"
   echo "Ctl-c to exit"
   read x
 }
@@ -27,28 +29,21 @@ dstOpt=""
 os="ubuntu"
 cpu=2
 mem=2048
+network="calico"
+test=0
 
 # must reset OPTIND to parse arguments properly when source'd
 OPTIND=1
-while getopts o:s:m:c:i: opt; do
+while getopts o:s:m:c:i:n:t opt; do
   case $opt in
-    s)
-      os=$OPTARG
-      ;;
-    o)
-      dstOpt="-o $OPTARG"
-      ;;
-    m)
-      mem=$OPTARG
-      ;;
-    c)
-      cpu=$OPTARG
-      ;;
-    i)
-      masterIp=$OPTARG
-      ;;
-    \?)
-      echo "Invalid option: -$OPTARG" >&2
+    s) os=$OPTARG ;;
+    o) dstOpt="-o $OPTARG" ;;
+    m) mem=$OPTARG ;;
+    c) cpu=$OPTARG ;;
+    i) masterIp=$OPTARG ;;
+    n) net=$OPTARG ;;
+    t) test=1 ;;
+    \?) echo "Invalid option: -$OPTARG" >&2
       usage 1
       ;;
     :)
@@ -67,11 +62,19 @@ else
   usage 1
 fi
 
-echo "Destroy existing kubernetes cluster"
-vagrant destroy -f
+if [[ test -eq 1 ]]; then
+  echo "Would destroy existing kubernetes cluster"
+else
+  echo "Destroy existing kubernetes cluster"
+  vagrant destroy -f
+fi
 
-echo "Create new key-pair for user, vagrant, on all nodes"
-yes y | ssh-keygen -t rsa -b 4096 -f id_rsa -N ''
+if [[ test -eq 1 ]]; then
+  echo "Would create new key-pair for user, vagrant, on all nodes"
+else
+  echo "Create new key-pair for user, vagrant, on all nodes"
+  yes y | ssh-keygen -t rsa -b 4096 -f id_rsa -N ''
+fi
 
 if  [[ $os == "centos" ]]; then
   cp Vagrantfile.centos Vagrantfile
@@ -91,6 +94,7 @@ echo "makeK8s: dstOpt:   $dstOpt"
 echo "makeK8s: mem:      $mem"
 echo "makeK8s: cpu:      $cpu"
 echo "makeK8s: masterIp: $masterIp"
+echo "makeK8s: net:      $net"
 
 # Update cpu/mem in Vagrantfile, as needed
 if [[ ! $cpu == "" ]]; then
@@ -110,9 +114,17 @@ fi
 # Update master IP address in Vagrantfile, as needed
 if [[ ! $masterIp == "" ]]; then
   echo "Setting masterIp in Vagrantfile: $masterIp"
-  sed -i "/\$masterIp /c\$masterIp    = \"$masterIp\"" Vagrantfile
+  sed -i "/\$masterIp    /c\$masterIp    = \"$masterIp\"" Vagrantfile
   # ipVal=$(grep '$masterIp ' Vagrantfile)
   # echo "ipVal: $ipVal"
+fi
+
+# Update network in Vagrantfile, as needed
+if [[ ! $net == "" ]]; then
+  echo "Setting network in Vagrantfile: $net"
+  sed -i "/\$net      /c\$net         = \"$net\"" Vagrantfile
+  # netVal=$(grep '$net ' Vagrantfile)
+  # echo "netVal: $netVal"
 fi
 
 # always set the project name, based on pwd
@@ -121,37 +133,43 @@ sed -i "s/\$proj        = \"proj\"/\$proj        = \"$proj\"/" Vagrantfile
 # projVal=$(grep "proj " Vagrantfile)
 # echo "projVal: $projVal"
 
-echo "Calling 'vagrant up' to create new kubernetes cluster"
-vagrant up
-if [[ $? -ne 0 ]]; then
-  err=1
-fi
-
-if [[ $err -eq 0 ]]; then
-  echo "Calling pull-k8s-admin.sh to retrieve kube config file (admin.conf), and scrub ~/.ssh/known_hosts"
-  cmd="./pull-k8s-admin.sh -i $masterIp"
-  echo "cmd: $cmd"
-  $cmd
+if [[ test -eq 1 ]]; then
+  echo " Would call vagrant up"
+  echo " Would call pull-k8s-admin.sh"
+  echo " Would call modKubeConfigFile.sh"
+  echo " Would call setKubeConfigVar.sh"
+else
+  echo "Calling 'vagrant up' to create new kubernetes cluster"
+  vagrant up
   if [[ $? -ne 0 ]]; then
     err=1
   fi
-fi
 
-if [[ $err -eq 0 ]]; then
-  echo "Calling modKubeConfigFile.sh to re-work kube config file and re-locate to multi-config k8s directory"
-  cmd="./modKubeConfigFile.sh -p $proj $dstOpt"
-  echo cmd: $cmd
-  $cmd
-  if [[ $? -ne 0 ]]; then
-    err=1
+  if [[ $err -eq 0 ]]; then
+    echo "Calling pull-k8s-admin.sh to retrieve kube config file (admin.conf), and scrub ~/.ssh/known_hosts"
+    cmd="./pull-k8s-admin.sh -i $masterIp"
+    echo "cmd: $cmd"
+    $cmd
+    if [[ $? -ne 0 ]]; then
+      err=1
+    fi
+  fi
+
+  if [[ $err -eq 0 ]]; then
+    echo "Calling modKubeConfigFile.sh to re-work kube config file and re-locate to multi-config k8s directory"
+    cmd="./modKubeConfigFile.sh -p $proj $dstOpt"
+    echo cmd: $cmd
+    $cmd
+    if [[ $? -ne 0 ]]; then
+      err=1
+    fi
+  fi
+
+  if [[ $err -eq 0 ]]; then
+    echo "Calling setKubeConfigVar.sh to set KUBECONFIG env var."
+    source ./setKubeConfigVar.sh $dstOpt
+    if [[ $? -ne 0 ]]; then
+      err=1
+    fi
   fi
 fi
-
-if [[ $err -eq 0 ]]; then
-  echo "Calling setKubeConfigVar.sh to set KUBECONFIG env var."
-  source ./setKubeConfigVar.sh $dstOpt
-  if [[ $? -ne 0 ]]; then
-    err=1
-  fi
-fi
-

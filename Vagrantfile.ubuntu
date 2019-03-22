@@ -22,40 +22,35 @@
 #     * Changing the pod-network-cidr settings to, e.g., avoid collisions with other networks
 # 
 
-# pull desired network from ENV, if defined; if not, default to calico
-$net=ENV['k8snet']
-if $net.to_s.strip.empty?
-  # default to calico
-  $net = "calico"
-end
-
-# Set CIDR, as prescribed by kubernetes.io/docs/setup/independent/create-cluster-kubeadm
-# These CIDR values agree with the values assumed in the respective YAML files, avoiding
-# the need to edit the YAML. If these are changed, YAML must be updated, as well.
-if    $net == "flannel"
-  $netCidr = "--pod-network-cidr=10.244.0.0/16"
-elsif $net == "canal"
-  $netCidr = "--pod-network-cidr=10.244.0.0/16"
-elsif $net == "calico"
-  # change calico default pod network to avoid overlap with host network
-  $netCidr = "--pod-network-cidr=192.200.0.0/16"
-elsif $net == "weave"
-  $netCidr = ""
-elsif $net == "romana"
-  $netCidr = ""
-end
-
 # Install Ubuntu on all nodes
 # Box-specific settings
 $proj        = "proj"
 $box         = "ubuntu/xenial64"
 $boxVer      = "20190308.0.0"
 $hostAdapter = "enp0s8"
+
+# Default values, for configurable parameters
 $cpu         = "2"
 $mem         = "2048"
-
-# Set the desired IP address of the master node, from which node IPs will follow
+$net         = "calico"
 $masterIp    = "192.168.205.10"
+
+
+# Set CIDR, as prescribed by kubernetes.io/docs/setup/independent/create-cluster-kubeadm
+# These CIDR values agree with the values assumed in the respective YAML files, avoiding
+# the need to edit the YAML. If these are changed, YAML must be updated, as well.
+if    $net == "flannel"
+  $netCidr  = "--pod-network-cidr=10.244.0.0/16"
+elsif $net == "canal"
+  $netCidr  = "--pod-network-cidr=10.244.0.0/16"
+elsif $net == "calico"
+  # change calico default pod network to avoid overlap with host network
+  $netCidr  = "--pod-network-cidr=192.200.0.0/16"
+elsif $net == "weave"
+  $netCidr  = ""
+elsif $net == "romana"
+  $netCidr  = ""
+end
 
 # DEB-based systems use /etc/default/kubelet
 # see https://kubernetes.io/docs/setup/independent/kubelet-integration
@@ -105,29 +100,29 @@ servers = [
   {
     :name => "#{$proj}-master",
     :type => "master",
-    :box => $box,
+    :box  => $box,
     :box_version => $boxVer,
     :eth1 => $masterIp,
-    :mem => $mem,
-    :cpu => $cpu
+    :mem  => $mem,
+    :cpu  => $cpu
   },
   {
     :name => "#{$proj}-node1",
     :type => "node",
-    :box => $box,
+    :box  => $box,
     :box_version => $boxVer,
     :eth1 => $masterIp.succ,
-    :mem => $mem,
-    :cpu => $cpu
+    :mem  => $mem,
+    :cpu  => $cpu
   },
   {
     :name => "#{$proj}-node2",
     :type => "node",
-    :box => $box,
+    :box  => $box,
     :box_version => $boxVer,
     :eth1 => $masterIp.succ.succ,
-    :mem => $mem,
-    :cpu => $cpu
+    :mem  => $mem,
+    :cpu  => $cpu
   }
 ]
 
