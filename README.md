@@ -23,8 +23,8 @@ Code" personal challenge, was to:
 All the files that comprise this project are in https://github.com/dsloyer/ez-kubeadm
 
 ## Overview
-* Kubeadm is the tool used to deploy the cluster.
-* Vagrant installs and configures the Ubuntu/CentOS boxes on VirtualBox.
+* **Kubeadm** is the tool used to deploy the cluster.
+* **Vagrant** installs and configures the Ubuntu/CentOS boxes on **VirtualBox**.
 * Bash scripts manage the process, perform further operations on the cluster nodes, providing a
   seamless experience.
 * To better support multiple kubernetes configurations, we gather the kubeconfig files generated
@@ -96,15 +96,17 @@ $ cd $HOME/test
 $ kubectl run nginx --restart=Never --image=nginx
 pod/nginx created
 
-$ ssh master
-The authenticity of host 'master (192.168.205.10)' can't be established.
-ECDSA key fingerprint is SHA256:lHvDa0Gg2wnjGeD7rmXWw5ltSGzc8OCnewi9xJpDfXE.
+dsloyer@hobbes:~/projects/k8s$ ssh ukube-master
+The authenticity of host 'ukube-master (192.168.205.10)' can't be established.
+ECDSA key fingerprint is SHA256:ZTr59SXk32ud7sIfynwjfNC6mlq92cG8iFm0Hbp69j4.
 Are you sure you want to continue connecting (yes/no)? yes
-Warning: Permanently added 'master' (ECDSA) to the list of known hosts.
-Welcome to Ubuntu 16.04.6 LTS (GNU/Linux 4.4.0-142-generic x86_64)
+Warning: Permanently added 'ukube-master,192.168.205.10' (ECDSA) to the list of known hosts.
+Welcome to Ubuntu 16.04.6 LTS (GNU/Linux 4.4.0-143-generic x86_64)
 --- some text removed ---
 
-username@master:~$ kubectl get po -o wide
+dsloyer@ukube-master:~$ kubectl get po
+NAME   READY   STATUS    RESTARTS   AGE
+nginx  1/1     Running   0          2m46s
 ```
 Destroy the cluster by cd'ing into the project folder for the cluster, then run:
 ```
@@ -121,7 +123,6 @@ apply the following parameter values in the call to makeK8s:
 ```
 $ source ./makeK8s.sh -s centos -n flannel -i 182.333.44.50 -c 3 -m 4096
 ```
-
 ## Setup Instructions:
 The setup for native Linux and Windows WSL is virtually identical, other than a few additional
 commands I've detailed just below.
@@ -192,7 +193,6 @@ commands I've detailed just below.
       than 7, or the IP addresses may not be monotonically increasing (e.g. master: 192.168.50.68,
       node1: 192.168.50.69, node2: 192.168.50.60).
   14. Run "source ./makeK8s.sh", or "source ./makeK8s.sh -s centos" to create a new cluster
-  
 ## Notes 
   1. Edits to the Vagrantfile (Vagrantfile.ubuntu or Vagrantfile.centos) should only be needed to:
      * make permanent changes to default memory or CPU settings for the nodes
@@ -238,8 +238,6 @@ commands I've detailed just below.
   10. I like to ssh directly into the cluster from any directory on my host.  These scripts support this by
       pushing an SSH public key down to each node.
 
-
-  
 ## WSL Notes (Windows 10's Linux environment):
 
 My development and testing were initially performed on Ubuntu 18 (Bionic). I later ported it to 
