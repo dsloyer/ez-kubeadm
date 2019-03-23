@@ -9,7 +9,7 @@
 #     * Version:  1902.01                         (latest CentOS7 box from Vagrant)
 #   or
 #   * Ubuntu:     Ubuntu/xenial64                 (prescribed by kubernetes.io)
-#     * Version   20190320.0.0                    (latest Ubuntu Xenial box from Vagrant)
+#     * Version   20190308.0.0                    (latest Ubuntu Xenial box from Vagrant)
 #     
 #   Edits to the Vagrantfile (Vagrantfile.ubuntu or Vagrantfile.centos) should only be needed to:
 #     * change the memory or CPU settings for the nodes
@@ -22,19 +22,12 @@
 #     * Changing the pod-network-cidr settings to, e.g., avoid collisions with other networks
 # 
 
-# Install CentOS on all nodes
-# Box-specific settings
-$proj        = "proj"
-$box         = "centos/7"
-$boxVer      = "1902.01"
-$hostAdapter = "eth1"
-
-# Default values, for configurable parameters
-$cpu         = "2"
-$mem         = "2048"
-$net         = "calico"
-$masterIp    = "192.168.205.15"
-
+# pull desired network from ENV, if defined; if not, default to calico
+$net=ENV['k8snet']
+if $net.to_s.strip.empty?
+  # default to calico
+  $net = "calico"
+end
 
 # Set CIDR, as prescribed by kubernetes.io/docs/setup/independent/create-cluster-kubeadm
 # These CIDR values agree with the values assumed in the respective YAML files, avoiding
@@ -52,9 +45,21 @@ elsif $net == "romana"
   $netCidr = ""
 end
 
-# RPM-based systems use /etc/sysconfig/kubelet
+# Install Ubuntu on all nodes
+# Box-specific settings
+$proj        = "proj"
+$box         = "ubuntu/xenial64"
+$boxVer      = "20190308.0.0"
+$hostAdapter = "enp0s8"
+$cpu         = "2"
+$mem         = "2048"
+
+# Set the desired IP address of the master node, from which node IPs will follow
+$masterIp    = "192.168.205.10"
+
+# DEB-based systems use /etc/default/kubelet
 # see https://kubernetes.io/docs/setup/independent/kubelet-integration
-$cfgKubelet  = "/etc/sysconfig/kubelet"
+$cfgKubelet  = "/etc/default/kubelet"
 
 # Pointers to network YAML files:
 # The calico network plug-in for kubernetes is installed by applying two yaml files
@@ -69,12 +74,12 @@ $calico2 = "https://docs.projectcalico.org/v3.3/getting-started/kubernetes/insta
 $canal1 = "https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/canal/rbac.yaml"
 # As with Flannel, must point to enp0s8 interface: $canal2 = "https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/canal/canal.yaml"
 # use local canal.yaml file, which corrects for Vagrant/VBox (points to 2nd NIC)
-$canal2 = "/vagrant/canal2c.yaml"
+$canal2 = "/vagrant/canal2.yaml"
 
 # Flannel yaml:
 # Needs tweak for Vagrant: $flannel = "https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml", mod'd here as kube-flannel.yaml
 # use local kube-flannel.yaml file, which corrects for Vagrant/VBox (points to 2nd NIC)
-$flannel = "/vagrant/kube-flannelc.yaml"
+$flannel = "/vagrant/kube-flannel.yaml"
 
 # Romana yaml:
 # ORG $romana = "https://raw.githubusercontent.com/romana/romana/master/containerize/specs/romana-kubeadm.yml"
@@ -100,68 +105,78 @@ servers = [
   {
     :name => "#{$proj}-master",
     :type => "master",
-    :box  => $box,
+    :box => $box,
     :box_version => $boxVer,
     :eth1 => $masterIp,
-    :mem  => $mem,
-    :cpu  => $cpu
+    :mem => $mem,
+    :cpu => $cpu
   },
   {
     :name => "#{$proj}-node1",
     :type => "node",
-    :box  => $box,
+    :box => $box,
     :box_version => $boxVer,
     :eth1 => $masterIp.succ,
-    :mem  => $mem,
-    :cpu  => $cpu
+    :mem => $mem,
+    :cpu => $cpu
   },
   {
     :name => "#{$proj}-node2",
     :type => "node",
-    :box  => $box,
+    :box => $box,
     :box_version => $boxVer,
     :eth1 => $masterIp.succ.succ,
-    :mem  => $mem,
-    :cpu  => $cpu
+    :mem => $mem,
+    :cpu => $cpu
   }
 ]
 
-# Configure CentOS boxes
+# Configure Ubuntu boxes
 # Each VM will be configured using this script, whether kubernetes master, or merely a node
-$configureCentos = <<SCRIPT
+$configureUbuntu = <<SCRIPT
   # ---- BEGIN CRI (container runtime interface) install.
   # See kubernetes.io/docs/setup/docs/cri. Versions are prescribed
   # by the kubernetes.io docs. The following commands are directly from
   # "CRI Installation" for Docker.
   #
+  ## If we install Docker from Ubuntu's repositories, we may not get the latest version
+  ## Docker CE 17.x. (or so I've observed)  Rather, let's install directly from Docker's repo.
+  ##
+  ## This installs from Ubuntu:
+  ## apt-get update
+  ## apt-get install -y docker.io
 
-  # Install Docker CE
-  ## Set up the repository
-  ### Install required packages
-  yum install -y yum-utils device-mapper-persistent-data lvm2
+  #  Instead, let's install Docker CE 18.06 from Docker's repositories for Ubuntu, like so:
+  ## Install prerequisite packages
+  apt-get update && apt-get install -y  \
+    apt-transport-https                 \
+    ca-certificates                     \
+    curl                                \
+    software-properties-common
 
-  ### Add docker repository
-  yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+  ## Download GPG key for the docker repo
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+
+  ## Add apt repo for docker
+  add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable"
 
   ## Install docker ce
-  yum update --setopt=deltarpm=0 -y && yum install -y docker-ce-18.06.2.ce
-
-  ## Create /etc/docker directory
-  mkdir /etc/docker
+  apt-get update && apt-get install -y docker-ce=18.06.2~ce~3-0~ubuntu
+  apt-mark hold docker-ce
 
   # generate configuration file for docker daemon, dockerd
   cat > /etc/docker/daemon.json <<EOF
-  {
-    "exec-opts": ["native.cgroupdriver=systemd"],
-    "log-driver": "json-file",
-    "log-opts": {
-      "max-size": "100m"
-    },
-    "storage-driver": "overlay2",
-    "storage-opts": [
-      "overlay2.override_kernel_check=true"
-    ]
-  }
+{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m"
+  },
+  "storage-driver": "overlay2"
+}
 EOF
 
   mkdir -p /etc/systemd/system/docker.service.d
@@ -175,28 +190,25 @@ EOF
   usermod -aG docker vagrant
 
   ## ---- BEGIN kubernetes.io/docs/setup/independent/install-kubeadm:
-  # add yum repo for kubernetes
-  cat <<EOF > /etc/yum.repos.d/kubernetes.repo
-[kubernetes]
-name=Kubernetes
-baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
-enabled=1
-gpgcheck=1
-repo_gpgcheck=1
-gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-exclude=kube*
+  ## Now, we apply a block of commands from kubernetes.io for kubeadm
+  apt-get install -y apt-transport-https curl
+  curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+
+  # add kubernetes.io repo to apt
+  cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
+  deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 
-  echo Disable SELinux
-  # Set SELinux in permissive mode (effectively disabling it)
-  setenforce 0
-  sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+  echo Install kubernetes packages: kubelet, kubeadm, kubectl
+  ## Install kubernetes packages, and block them from being from upgraded by apt
+  apt-get update
+  apt-get install -y kubelet kubeadm kubectl
+  apt-mark hold kubelet kubeadm kubectl
+  # ---- END kubeadm install
 
-  echo Install kubelet, kubeadm, kubectl
-  yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
-
-  echo Enable and start kubelet
-  systemctl enable kubelet && systemctl start kubelet
+  echo Apply all updates
+  # install all current updates
+  apt-get upgrade -y
 
   echo Permanently enable ip_forward, bridge-nf-call-iptables
   # Apply these settings, permanently, to avoid errors in Kubeadm preflight checks
@@ -205,10 +217,6 @@ net.bridge.bridge-nf-call-ip6tables = 1
 net.bridge.bridge-nf-call-iptables  = 1
 net.ipv4.ip_forward                 = 1
 EOF
-
-  # reload sysctl settings
-  sysctl --system
-  # ---- END kubeadm install
 
   echo Disabling swap, for now
   # kubelet requires swap off -- see "Installing kubeadm", "Before you begin"
@@ -234,7 +242,7 @@ EOF
   sudo systemctl restart kubelet
 
   # NFS client to be available everywhere:
-  sudo yum install -y nfs-utils
+  apt-get install -y nfs-common
 
   # Copy key-pair from host's project directory to vagrant user's .ssh directory on node
   cp /vagrant/id_rsa /home/vagrant/.ssh
@@ -249,7 +257,7 @@ EOF
   chown $(id -u vagrant):$(id -g vagrant) /home/vagrant/.ssh/id_rsa.pub
   echo "vagrant private/public keys installed"
 SCRIPT
-# End CentOS Configuration Script
+# End Ubuntu Configuration Script
 
 # Generate script to build master nodes
 $configureMaster = <<SCRIPT
@@ -289,14 +297,14 @@ $configureMaster = <<SCRIPT
     #   Node logs show: "Failed to get peers" (kubectl logs -n kube-system -f weave-net-spx6g weave)
     # One soln promoted online is to add a route to the master node, as we do here:
 
-    ## For Ubuntu, append a line to the end of /etc/network/interfaces, and restart the interface
-    #echo "      up ip route add 10.96.0.1/32 via #{$masterIp}" >>/etc/network/interfaces
-    #ifdown enp0s8 && ifup enp0s8
+    # For Ubuntu, append a line to the end of /etc/network/interfaces, and restart the interface
+    echo "      up ip route add 10.96.0.1/32 via #{$masterIp}" >>/etc/network/interfaces
+    ifdown enp0s8 && ifup enp0s8
 
-    # For CentOS, add a file containing the desired route
-    echo "10.96.0.1 via #{$masterIp} dev eth1" >./route-eth1
-    sudo mv ./route-eth1 /etc/sysconfig/network-scripts/
-    sudo /etc/sysconfig/network-scripts/ifup-routes eth1
+    ## For CentOS, add a file containing the desired route
+    #echo "10.96.0.1 via #{$masterIp} dev eth1" >./route-eth1
+    #sudo mv ./route-eth1 /etc/sysconfig/network-scripts/
+    #sudo systemctl restart network
 
     kubectl apply -f #{$weave}
   elif [[ #{$net} = "calico" ]]; then
@@ -341,13 +349,13 @@ $configureNode = <<SCRIPT
     # One soln promoted online is to add a route to the master node, as we do here:
 
     ## For Ubuntu, append a line to the end of /etc/network/interfaces, and restart the interface
-    #echo "      up ip route add 10.96.0.1/32 via #{$masterIp}" >>/etc/network/interfaces
-    #ifdown enp0s8 && ifup enp0s8
+    echo "      up ip route add 10.96.0.1/32 via #{$masterIp}" >>/etc/network/interfaces
+    ifdown enp0s8 && ifup enp0s8
 
-    # For CentOS, add a file containing the desired route
-    echo "10.96.0.1 via #{$masterIp} dev eth1" >./route-eth1
-    sudo mv ./route-eth1 /etc/sysconfig/network-scripts/
-    sudo /etc/sysconfig/network-scripts/ifup-routes eth1
+    ## For CentOS, add a file containing the desired route
+    #echo "10.96.0.1 via #{$masterIp} dev eth1" >./route-eth1
+    #sudo mv ./route-eth1 /etc/sysconfig/network-scripts/
+    #sudo systemctl restart network
   fi
 
   echo "Copy join script from master node to local directory"
@@ -355,7 +363,6 @@ $configureNode = <<SCRIPT
   echo "Run join script to join cluster"
   sh ./kubeadm_join_cmd.sh
 SCRIPT
-# End of script to build worker nodes
 
 # Configure each VBox VM 
 Vagrant.configure("2") do |config|
@@ -374,11 +381,11 @@ Vagrant.configure("2") do |config|
         vb.customize ["modifyvm", :id, "--cpus",    opts[:cpu]]
         # The following avoids errors when WSL tries to open logfile when creating Ubuntu/Xenial
         # (not needed if hosted on Linux -- only Windows)
-        # vb.customize ['modifyvm', :id, '--uartmode1', 'disconnected']
+        vb.customize ['modifyvm', :id, '--uartmode1', 'disconnected']
       end
 
       # base config
-      config.vm.provision "shell", inline: $configureCentos
+      config.vm.provision "shell", inline: $configureUbuntu
 
       # morph into master/worker nodes
       if opts[:type] == "master"

@@ -9,7 +9,7 @@
 #     * Version:  1902.01                         (latest CentOS7 box from Vagrant)
 #   or
 #   * Ubuntu:     Ubuntu/xenial64                 (prescribed by kubernetes.io)
-#     * Version   20190308.0.0                    (latest Ubuntu Xenial box from Vagrant)
+#     * Version   20190320.0.0                    (latest Ubuntu Xenial box from Vagrant)
 #     
 #   Edits to the Vagrantfile (Vagrantfile.ubuntu or Vagrantfile.centos) should only be needed to:
 #     * change the memory or CPU settings for the nodes
@@ -26,7 +26,7 @@
 # Box-specific settings
 $proj        = "proj"
 $box         = "ubuntu/xenial64"
-$boxVer      = "20190308.0.0"
+$boxVer      = "20190320.0.0"
 $hostAdapter = "enp0s8"
 
 # Default values, for configurable parameters
