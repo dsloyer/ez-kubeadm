@@ -31,8 +31,8 @@ All the files that comprise this project are in https://github.com/dsloyer/ez-ku
   by kubeadm in a single directory, and set the KUBECONFIG env var based on the contents of that
   directory.
 
-The Kubernetes master and worker node VMs can be either Ubuntu (default). CentOS is easily selected
-via runtime parameter, as are network (CNI), memory, and CPU settings.
+The Kubernetes master and worker node VMs can be either Ubuntu(default) or CentOS. CentOS is easily
+selected via runtime parameter, as are network (CNI), memory, and CPU settings.
 
 Currently supporting any of five networking alternatives, a CNI network is selected via environment
 variable -- one of {calico, canal, flannel, romana, weave}.  Calico is deployed by default.  You may
