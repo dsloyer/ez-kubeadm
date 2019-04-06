@@ -25,7 +25,7 @@ All the files that comprise this project are in https://github.com/dsloyer/ez-ku
 ## Overview
 * **Kubeadm** is the tool used to deploy the cluster.
 * **Vagrant** installs and configures the Ubuntu/CentOS boxes on **VirtualBox**.
-* Bash scripts manage the process, perform further operations on the cluster nodes, providing a
+* **Bash scripts** manage the process, perform further operations on the cluster nodes, providing a
   seamless experience.
 * To better support multiple kubernetes configurations, we gather the kubeconfig files generated
   by kubeadm in a single directory, and set the KUBECONFIG env var based on the contents of that
