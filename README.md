@@ -54,7 +54,7 @@ these versions:
     * Version:  1902.01                         (latest CentOS7 box from Vagrant)
   or
   * Ubuntu:     Ubuntu/xenial64                 (prescribed by kubernetes.io)
-    * Version   20190308.0.0                    (latest Ubuntu Xenial box from Vagrant)
+    * Version   20190325.0.0                    (latest Ubuntu Xenial box from Vagrant)
     
 ## Show Me
 Assuming you've setup your system per the instructions below, a few simple steps prepare for an
