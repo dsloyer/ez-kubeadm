@@ -61,7 +61,9 @@ Assuming you've setup your system per the instructions below, a few simple steps
 entirely new cluster. Let's call it 'ukube':
 ```
 $ cd $HOME/projects
-$ git pull 
+$ mkdir ez-kubeadm && cd ez-kubeadm
+$ git init && git pull https://github.com/dsloyer/ez-kubeadm.git
+$ cd $HOME/projects
 $ mkdir ukube && cd ukube
 $ vagrant init
 $ cp ../ez-kubeadm/* .
