@@ -83,8 +83,8 @@ if [[ "$destDir" = "" ]]; then
 fi
 
 if [[ ! -d $destDir ]]; then
-  echo "directory, $destDir, does not exist."
-  exit 1
+  echo "directory, $destDir, does not exist. Creating it now."
+  mkdir $destDir
 fi
 
 echo "project:     $proj"

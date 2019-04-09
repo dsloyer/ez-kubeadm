@@ -139,6 +139,14 @@ if [[ test -eq 1 ]]; then
   echo " Would call modKubeConfigFile.sh"
   echo " Would call setKubeConfigVar.sh"
 else
+
+  if [[ -f $HOME/.ssh/id_rsa.pub ]]; then
+    echo "Copying host user's ($LOGNAME) id_rsa.pub key to project directory"
+    cp $HOME/.ssh/id_rsa.pub id_rsa.pub.$LOGNAME
+  else
+    echo "WARNING: File not found: $HOME/.ssh/id_rsa.pub"
+  fi
+
   echo "Calling 'vagrant up' to create new kubernetes cluster"
   vagrant up
   if [[ $? -ne 0 ]]; then
