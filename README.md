@@ -1,7 +1,7 @@
 ## Create Local Multi-node Kubernetes Clusters In One Simple Command
 
 This project has a simple aim: make is easy to create multi-node Kubernetes clusters, in a local
-environment, with a single command.  Also, to supports several clusters, and easy switching between
+environment, with a single command.  Also, to support several clusters, and easy switching between
 them.
 
 Why use this project?  Because the steps are clear and simple, removing, as far as
@@ -15,7 +15,7 @@ Code" personal challenge, was to:
   (kubeadm, CRI, CNI, etc), to a single command.
 * Implement it such that discarding, and recreating, a working cluster is trivial, reliable, and
   fast.
-* Document the tools, applications needed (what, where to find, what, to install).
+* Document the tools, applications needed (what to install, and where to find).
 * Gather issues observed in testing, and catalogue their resolution.
 * Support both Linux and Windows 10 WSL (Windows Subsystem for Linux) hosts.
 * Package it as a small bundle of files.
@@ -136,7 +136,7 @@ commands I've detailed just below.
        ```
      Make it executable and move to a preferred directory in your path, e.g. /usr/local/bin, as
      seen above
-  2. Install VirtualBox 5.2.6 for your system (VirtualBox 6.0 has only given unresolvable problem).
+  2. Install VirtualBox 5.2.26 for your system (VirtualBox 6.0 seems to present several painful issues).
      On Linux, install VirtualBox for Linux. For Windows WSL, install the Windows version, not the
      Linux version.
      NOTE: We assume you've enabled virtualization in the BIOS, and that no conflicting
@@ -201,8 +201,7 @@ commands I've detailed just below.
        192.168.205.11
        CentOS cmaster IP is 192.168.205.15; worker node IPs immediately follow, i.e. cnode1 is
        192.168.205.16
-     * want more/fewer nodes? edit the servers array in the Vagrantfile.
-
+     * want more/fewer nodes? edit the servers array i seems to present sev seems to present sev seems to present sev seems to present sev seems to present several painful issues
   2. To set the KUBECONFIG env var at any time, e.g. on a new shell instance, cd to the project
      directory, and "source" the script, setKubeConfigVar.sh:
      ```
