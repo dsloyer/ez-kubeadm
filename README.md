@@ -61,10 +61,10 @@ Assuming you've setup your system per the instructions below, a few simple steps
 entirely new cluster. Let's call it 'ukube':
 ```
 $ cd $HOME/projects
+$ git pull 
 $ mkdir ukube && cd ukube
 $ vagrant init
 $ cp ../ez-kubeadm/* .
-$ cp $HOME/.ssh/id_rsa.pub id_rsa.pub.$LOGNAME
 $ source ./makeK8s.sh -h
 usage: source ./makeK8s.sh [-h][-s centos | ubuntu][-o destDir][-m memSize][-c cpuCnt][-i masterIp][-n network][-t]                                                                                                                                 options:
   -s specifies either CentOS or Ubuntu nodes
@@ -127,7 +127,7 @@ $ source ./makeK8s.sh -s centos -n flannel -i 182.333.44.50 -c 3 -m 4096
 The setup for native Linux and Windows WSL is virtually identical, other than a few additional
 commands I've detailed just below.
 
-  1. Install kubectl on your host system, per instructions on kubernetes.io
+  1. Install kubectl on your host system, per instructions on kubernetes.io.
      One method (https://kubernetes.io/docs/tasks/tools/install-kubectl/):
        ```
        $ curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
@@ -164,12 +164,6 @@ commands I've detailed just below.
      ```
   5. Clone ez-kubeadm into your projects directory, e.g. #HOME/projects/ez-kubeadm.
   6. Create a project directory specific to the new kubernetes cluster; e.g. $HOME/projects/ukube/.
-  7. Accept ez-kubeadm's default directory for kubeconfig files -- $HOME/.kube/config.d. This can be
-     over-ridden by using the "-o" option to makeK8s.sh. If you accept the default directory,
-     create it:
-     ```
-     $ mkdir -p $HOME/.kube/config.d
-     ```
   8. cd to the specific kubernetes cluster project directory, e.g. $HOME/projects/ukube
   9. Run "vagrant init"
      ```
@@ -179,11 +173,9 @@ commands I've detailed just below.
       ```
       $ cp ../ez-kubeadm/* .
       ```
-  11. Copy your id_rsa.pub file into the vagrant project folder
-      (if needed, use "ssh-keygen -t rsa -b 4096 -f id_rsa" in $HOME/.ssh)
-      ```
-      $ cp $HOME/.ssh/id_rsa.pub id_rsa.pub.$LOGNAME
-      ```
+  11. ez-kubeadm expects you to have an id_rsa.pub file $HOME/.ssh, which it will copy into the
+      project directory for the new cluster. If needed, use "ssh-keygen -t rsa -b 4096 -f id_rsa"
+      to produce one.
   12. Consider the CPU/memory settings in the relevant Vagrantfile -- either Vagrantfile.ubuntu, or
       Vagrantfile.centos.  By default, all nodes receive 2048MB of RAM, and 2 vCPUs.
       If you want to change them, add a parameter for the desired change in the next step. E.g, if
@@ -223,18 +215,21 @@ commands I've detailed just below.
       ```
       $ kubectl config use-context <context-name>
       ```
-  7. I suggest adding the node names (master, node1, etc) to your hosts file.
+  7. ez-kubeadm's default directory for storing kubeconfig files is $HOME/.kube/config.d. This can be
+     over-ridden by using the "-o" option to makeK8s.sh.  The directory will be created if it does
+     not exist.     
+  8. I suggest adding the node names (master, node1, etc) to your hosts file.
      
      In Windows, these changes are applied to the native Windows hosts file -- not /etc/hosts in
      bash. The native Windows hosts file can be found at C:\Windows\system32\drivers\etc\hosts.
-  8. When you are entirely finished with a cluster, the kubeconfig file will remain after its
+  9. When you are entirely finished with a cluster, the kubeconfig file will remain after its
      destruction; as such, you will want to delete it from the directory where these files are kept
      -- $HOME/.kube/config.d (default).  Otherwise, kubectl will continue to present the deleted cluster
      to you.
-  8. When the preferred host user account is created on the k8s master and nodes, the accounts password
-     is set (needed for sudo).  The password is set to "qwerty0987".
-  9. By default, the master node's taint against running pods is removed.
-  10. I like to ssh directly into the cluster from any directory on my host.  These scripts support this by
+  10. When the preferred host user account is created on the k8s master and nodes, the accounts password
+      is set (needed for sudo).  The password is set to "qwerty0987".
+  11. By default, the master node's taint against running pods is removed.
+  12. I like to ssh directly into the cluster from any directory on my host.  These scripts support this by
       pushing an SSH public key down to each node.
 
 ## WSL Notes (Windows 10's Linux environment):
