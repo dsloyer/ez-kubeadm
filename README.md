@@ -27,9 +27,9 @@ All the files that comprise this project are in https://github.com/dsloyer/ez-ku
 * **Vagrant** installs and configures the Ubuntu/CentOS boxes on **VirtualBox**.
 * **Bash scripts** manage the process, perform further operations on the cluster nodes, providing a
   seamless experience.
-* To better support multiple kubernetes configurations, we gather the kubeconfig files generated
-  by kubeadm in a single directory, and set the KUBECONFIG env var based on the contents of that
-  directory.
+* To better support multiple kubernetes configurations, ez-kubeadm gathers its generated kubeconfig
+  files in a directory, **$HOME/.kube/config.d**, and sets the KUBECONFIG env var based on
+  the contents of that directory.
 
 The Kubernetes master and worker node VMs can be either Ubuntu(default) or CentOS. CentOS is easily
 selected via runtime parameter, as are network (CNI), memory, and CPU settings.
@@ -39,14 +39,13 @@ variable -- one of {calico, canal, flannel, romana, weave}.  Calico is deployed 
 not care what network is being used -- I included them as an exercise for me.  If you're interested
 in exploring, for example, network policies, you may find one network, or another, to be of interest.
 
-A complete Kubernetes cluster based on Ubuntu, with Calico networking, can be built with a single
-command in the vagrant project directory. Before running that command, you first must do some
-modest preparation:
-  1. clone this repository locally (into, say $HOME/projects/ez-kubeadm)
+A complete Kubernetes cluster can be built with a single command in the vagrant project directory.
+Before running that command, you first must do some modest preparation:
+  1. clone this repository locally (into, say, $HOME/projects/ez-kubeadm)
   2. install vagrant and VirtualBox
   3. setup directories and env variables. All this is described in detail, below.
 
-As of mid-March, 2019, this script creates a 3-node k8s cluster (master and 2 worker nodes), with
+As of late-March, 2019, this script creates a 3-node k8s cluster (master and 2 worker nodes), with
 these versions:
   * Kubernetes: 1.13.4                          (current version on kubernetes.io)
   * Docker:     18.06.2                         (prescribed by kubernetes.io)
