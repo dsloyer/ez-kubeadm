@@ -4,7 +4,7 @@ This project has a simple aim: make is easy to create multi-node Kubernetes clus
 environment, with a single command.  Also, to support several clusters, and easy switching between
 them.
 
-Why use this project?  Because the steps are clear and simple, removing, as far as
+Why use ez-kubeadm?  Because the steps are clear and simple, removing, as far as
 possible, all guesswork and risk.  My interest, beyond taking it as a modest "Infrastructure as
 Code" personal challenge, was to:
 * Avoid a sometimes fragmented, often confusing, process of deployment via other solutions.
@@ -34,26 +34,26 @@ All the files that comprise this project are in https://github.com/dsloyer/ez-ku
 The Kubernetes master and worker node VMs can be either Ubuntu(default) or CentOS. CentOS is easily
 selected via runtime parameter, as are network (CNI), memory, and CPU settings.
 
-Currently supporting any of five networking alternatives, a CNI network is selected via environment
-variable -- one of {calico, canal, flannel, romana, weave}.  Calico is deployed by default.  You may
+Currently supporting any of five networking alternatives, a CNI network is selected via parameter
+-- one of {calico, canal, flannel, romana, weave}.  Calico is deployed by default.  You may
 not care what network is being used -- I included them as an exercise for me.  If you're interested
 in exploring, for example, network policies, you may find one network, or another, to be of interest.
 
-A complete Kubernetes cluster can be built with a single command in the vagrant project directory.
+A complete Kubernetes cluster can be built with a single command in the project directory.
 Before running that command, you first must do some modest preparation:
   1. clone this repository locally (into, say, $HOME/projects/ez-kubeadm)
   2. install vagrant and VirtualBox
   3. setup directories and env variables. All this is described in detail, below.
 
-As of late-March, 2019, this script creates a 3-node k8s cluster (master and 2 worker nodes), with
+As of mid-April, 2019, this script creates a 3-node k8s cluster (master and 2 worker nodes), with
 these versions:
-  * Kubernetes: 1.13.4                          (current version on kubernetes.io)
+  * Kubernetes: 1.14.1                          (current version on kubernetes.io)
   * Docker:     18.06.2                         (prescribed by kubernetes.io)
   * Centos:     CentOS7,                        (prescribed by kubernetes.io))
     * Version:  1902.01                         (latest CentOS7 box from Vagrant)
   or
   * Ubuntu:     Ubuntu/xenial64                 (prescribed by kubernetes.io)
-    * Version   20190325.0.0                    (latest Ubuntu Xenial box from Vagrant)
+    * Version   20190411.0.0                    (latest Ubuntu Xenial box from Vagrant)
     
 ## Show Me
 Assuming you've setup your system per the instructions below, a few simple steps prepare for an
@@ -67,7 +67,8 @@ $ mkdir ukube && cd ukube
 $ vagrant init
 $ cp ../ez-kubeadm/* .
 $ source ./makeK8s.sh -h
-usage: source ./makeK8s.sh [-h][-s centos | ubuntu][-o destDir][-m memSize][-c cpuCnt][-i masterIp][-n network][-t]                                                                                                                                 options:
+usage: source ./makeK8s.sh [-h][-s centos | ubuntu][-o destDir][-m memSize][-c cpuCnt][-i masterIp][-n network][-t][-d]
+options:
   -s specifies either CentOS or Ubuntu nodes
   -o specifies the destination directory, where kubeconfig files are being collected
   -m specifies how many GB memory for each VM
@@ -75,6 +76,8 @@ usage: source ./makeK8s.sh [-h][-s centos | ubuntu][-o destDir][-m memSize][-c c
   -i specifies master IP address
   -n specifies network, one of calico, canal, flannel, romana, weave
   -t test only (dry run)
+  -d delete existing cluster only
+Ctl-c to exit
 ```
 You're ready to create a cluster, or destroy and recreate an Ubuntu-based Kubernetes cluster,
 anytime, from this directory, with a single command:
@@ -87,17 +90,17 @@ $ kubectl config use-context ukube
 Switched to context "ukube".
 $ kubectl get nodes
 NAME           STATUS   ROLES    AGE     VERSION
-ukube-master   Ready    master   5m41s   v1.13.4
-ukube-node1    Ready    <none>   3m8s    v1.13.4
-ukube-node2    Ready    <none>   21s     v1.13.4                                                                             
+ukube-master   Ready    master   5m41s   v1.14.1
+ukube-node1    Ready    <none>   3m8s    v1.14.1
+ukube-node2    Ready    <none>   21s     v1.14.1                                                                             
 ```
 Let's change directory, spin up an nginx container pod, ssh to the master node, and list the running pods:
 ```
-$ cd $HOME/test
+$ cd ~/projects/test
 $ kubectl run nginx --restart=Never --image=nginx
 pod/nginx created
 
-dsloyer@hobbes:~/projects/k8s$ ssh ukube-master
+$ ssh ukube-master
 The authenticity of host 'ukube-master (192.168.205.10)' can't be established.
 ECDSA key fingerprint is SHA256:ZTr59SXk32ud7sIfynwjfNC6mlq92cG8iFm0Hbp69j4.
 Are you sure you want to continue connecting (yes/no)? yes
@@ -105,28 +108,30 @@ Warning: Permanently added 'ukube-master,192.168.205.10' (ECDSA) to the list of 
 Welcome to Ubuntu 16.04.6 LTS (GNU/Linux 4.4.0-143-generic x86_64)
 --- some text removed ---
 
-dsloyer@ukube-master:~$ kubectl get po
+username@ukube-master:~$ kubectl get po
 NAME   READY   STATUS    RESTARTS   AGE
 nginx  1/1     Running   0          2m46s
 ```
 Destroy the cluster by cd'ing into the project folder for the cluster, then run:
 ```
 $ cd $HOME/projects/ukube
+$ source ./makeK8s.sh -d
+or
 $ vagrant destroy -f
 ```
 To create a cluster configured with these parameter settings:
- * CentOS OS,
+ * CentOS OS as node operating system,
  * Flannel networking,
- * node IPs starting from 182.333.44.50,
- * 3 cpus, and
- * 4096MB memory
+ * node IPs starting from master, at 192.168.44.50,
+ * 3 cpus per node, and
+ * 4096MB memory each
 apply the following parameter values in the call to makeK8s:
 ```
-$ source ./makeK8s.sh -s centos -n flannel -i 182.333.44.50 -c 3 -m 4096
+$ source ./makeK8s.sh -s centos -n flannel -i 192.168.44.50 -c 3 -m 4096
 ```
 ## Setup Instructions:
-The setup for native Linux and Windows WSL is virtually identical, other than a few additional
-commands I've detailed just below.
+The setup for native Ubuntu Linux and Windows WSL (Ubuntu) is virtually identical, other than
+a few additional commands I've detailed just below.
 
   1. Install kubectl on your host system, per instructions on kubernetes.io.
      One method (https://kubernetes.io/docs/tasks/tools/install-kubectl/):
@@ -149,8 +154,8 @@ commands I've detailed just below.
      
      As discussed below, it's a good idea to locate the projects directory in, e.g.,
      C:\Users\$LOGNAME\projects,
-     Set a symlink from /home/$LOGNAME to that projects directory, set env vars also listed here,
-     and specify metadata on the mounted C: drive:
+     Set a symlink from /home/$LOGNAME/projects to that projects directory, set env vars also listed
+     here, and specify metadata on the mounted C: drive:
      ```
      $ ln -s /mnt/c/Users/$LOGNAME/projects $HOME/projects
      $ echo "export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH=/home/$LOGNAME/projects" >>$HOME/.bashrc && source $HOME/.bashrc
@@ -223,10 +228,13 @@ commands I've detailed just below.
      
      In Windows, these changes are applied to the native Windows hosts file -- not /etc/hosts in
      bash. The native Windows hosts file can be found at C:\Windows\system32\drivers\etc\hosts.
-  9. When you are entirely finished with a cluster, the kubeconfig file will remain after its
-     destruction; as such, you will want to delete it from the directory where these files are kept
-     -- $HOME/.kube/config.d (default).  Otherwise, kubectl will continue to present the deleted cluster
-     to you.
+  9. When you are entirely finished with a cluster, you probably want the associated kubeconfig file
+     to be deleted, along with the cluster, which can be accomplished as follows:
+     ```
+     source ./makeK8s.sh -d
+     ```
+     If the cluster is removed using, say "vagrant destroy -f", then the cluster will be destroyed,
+     but the kubeconfig file will still exist.
   10. When the preferred host user account is created on the k8s master and nodes, the accounts password
       is set (needed for sudo).  The password is set to "qwerty0987".
   11. By default, the master node's taint against running pods is removed.
@@ -359,4 +367,4 @@ Thankfully, the project directory is automatically mounted onto each node by Vag
 Therefore, the SSH keys of interest are accessible by all our Vagrant VMs, at that location.
 
 NOTE: The mount is only automatic during node creation, and must be re-mounted manually if the node
-reboots.
+reboots (However, mount can be made automatic).
