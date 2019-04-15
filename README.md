@@ -114,11 +114,14 @@ nginx  1/1     Running   0          2m46s
 ```
 Destroy the cluster by cd'ing into the project folder for the cluster, then run:
 ```
-$ cd $HOME/projects/ukube
 $ source ./makeK8s.sh -d
+```
 or
+```
 $ vagrant destroy -f
 ```
+Using "makeK8s.sh -d" removes stale kubeconfig files, and might be preferred for that reason.
+
 To create a cluster configured with these parameter settings:
  * CentOS OS as node operating system,
  * Flannel networking,
