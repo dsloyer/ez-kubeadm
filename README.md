@@ -280,7 +280,7 @@ Specific env vars and for Windows WSL:
        ```
        echo "export VAGRANT_HOME=\"/home/$LOGNAME/.vagrant.d\"" >>$HOME/.bashrc && source $HOME/.bashrc
        ```
-  * In Vagrantfile, I've added this line to avoid another rsync issue: config.ssh.insert_key = false
+
   2. C:\Windows\System32\drivers\etc\hosts file permissions -- user must have modify permission
      to avoid "Permission denied" for the vagrant hostsupdater plugin to work (it's not installed by
      VBox 5.2.x, but is in VBox 6.0.)
@@ -292,9 +292,15 @@ Specific env vars and for Windows WSL:
      Also, the files in /mnt/c may all be owned by root. Adjust as needed.
      See https://blogs.msdn.microsoft.com/commandline/2018/01/12/chmod-chown-wsl-improvements/
      See Also: https://docs.microsoft.com/en-us/windows/wsl/wsl-config
-  4. With permissions changes enabled from bash (via metadata), tighten any ssh key permissions to
+  4. VMs won't spin up on WSL due to weak permissions on the key-pair created by vagrant.  The solution is to add this
+     line to the Vagrantfile:
+     ```
+     config.ssh.insert_key = false
+     ```
+     With this line present in the Vagrantfile, both CentOS and Ubuntu VMs will boot successfully.
+  5. With permissions changes enabled from bash (via metadata), tighten any ssh key permissions to
      avoid problems: I set my PKI keys as "chmod 644 id_rsa*"
-  5. vagrant is prone to throwing "Insecure world writable dir" errors. I tend to use
+  6. vagrant is prone to throwing "Insecure world writable dir" errors. I tend to use
      "chmod 755 <dir>" to correct these, which seems to work fine.
 
 That's it for the setup.  Here are some further WSL notes, which describe some issues I've
