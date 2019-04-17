@@ -13,7 +13,7 @@ usage () {
   echo "options:"
   echo " -s specifies either CentOS or Ubuntu nodes"
   echo " -o specifies the destination directory, where kubeconfig files are being collected"
-  echo " -m specifies how many GB memory for each VM"
+  echo " -m specifies memory for each VM (MB)"
   echo " -c specifies how many vCPUs for each VM"
   echo " -i specifies master IP address"
   echo " -n specifies network, one of calico, canal, flannel, romana, weave"
@@ -30,7 +30,7 @@ dstDir="$HOME/.kube/config.d"
 os="ubuntu"
 cpu=2
 mem=2048
-network="calico"
+net="calico"
 test=0
 destroy=0
 

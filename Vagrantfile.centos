@@ -40,16 +40,16 @@ $masterIp    = "192.168.205.15"
 # These CIDR values agree with the values assumed in the respective YAML files, avoiding
 # the need to edit the YAML. If these are changed, YAML must be updated, as well.
 if    $net == "flannel"
-  $netCidr = "--pod-network-cidr=10.244.0.0/16"
+  $netCidr  = "--pod-network-cidr=10.244.0.0/16"
 elsif $net == "canal"
-  $netCidr = "--pod-network-cidr=10.244.0.0/16"
+  $netCidr  = "--pod-network-cidr=10.244.0.0/16"
 elsif $net == "calico"
   # change calico default pod network to avoid overlap with host network
-  $netCidr = "--pod-network-cidr=192.200.0.0/16"
+  $netCidr  = "--pod-network-cidr=192.200.0.0/16"
 elsif $net == "weave"
-  $netCidr = ""
+  $netCidr  = ""
 elsif $net == "romana"
-  $netCidr = ""
+  $netCidr  = ""
 end
 
 # RPM-based systems use /etc/sysconfig/kubelet
@@ -360,6 +360,9 @@ SCRIPT
 # Configure each VBox VM 
 Vagrant.configure("2") do |config|
   # suggested on stack overflow, 46150672, avoiding issue with WSL (not needed on Linux)
+  # In WSL, a key-pair is generated, with too-lax permissions, giving this error:
+  # "The private key to connect to this box via SSH has invalid permissions"...
+  # We avoid the issue by disabling insert_key:
   config.ssh.insert_key = false
   servers.each do |opts|
     config.vm.define opts[:name] do |config|
