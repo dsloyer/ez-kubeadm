@@ -55,7 +55,7 @@ done
 
 dstOpt="-o $dstDir"
 
-if [[ test -eq 1 ]]; then
+if [[ $test -eq 1 ]]; then
   echo "Would destroy existing kubernetes cluster"
 else
   echo "Destroy existing kubernetes cluster"
@@ -69,7 +69,7 @@ else
   vagrant destroy -f
 fi
 
-if [[ destroy -eq 1 ]]; then
+if [[ $destroy -eq 1 ]]; then
   echo "Destroy flag set: Destroying cluster, if it exists -- nothing more."
 else
   if [[ "$os" == "centos" ]]; then
@@ -81,7 +81,7 @@ else
     usage 1
   fi
 
-  if [[ test -eq 1 ]]; then
+  if [[ $test -eq 1 ]]; then
     echo "Would create new key-pair for user, vagrant, on all nodes"
   else
     echo "Create new key-pair for user, vagrant, on all nodes"
@@ -145,7 +145,7 @@ else
   # projVal=$(grep "proj " Vagrantfile)
   # echo "projVal: $projVal"
 
-  if [[ test -eq 1 ]]; then
+  if [[ $test -eq 1 ]]; then
     echo " Would call vagrant up"
     echo " Would call pull-k8s-admin.sh"
     echo " Would call modKubeConfigFile.sh"

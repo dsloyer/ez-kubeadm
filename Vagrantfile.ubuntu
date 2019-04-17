@@ -2,14 +2,15 @@
 # vi: set ft=ruby :
 #
 
-# As of mid-March, 2019, this script creates a 3-node k8s cluster (master and 2 worker nodes), with these versions:
-#   * Kubernetes: 1.13.4                          (current version on kubernetes.io)
+# As of mid-April, 2019, this script creates a 3-node k8s cluster (master and 2 worker nodes),
+# with these versions:
+#   * Kubernetes: 1.14.1                          (current version on kubernetes.io)
 #   * Docker:     18.06.2                         (prescribed by kubernetes.io)
 #   * Centos:     CentOS7,                        (prescribed by kubernetes.io))
 #     * Version:  1902.01                         (latest CentOS7 box from Vagrant)
 #   or
 #   * Ubuntu:     Ubuntu/xenial64                 (prescribed by kubernetes.io)
-#     * Version   20190325.0.0                    (latest Ubuntu Xenial box from Vagrant)
+#     * Version   20190411.0.0                    (latest Ubuntu Xenial box from Vagrant)
 #     
 #   Edits to the Vagrantfile (Vagrantfile.ubuntu or Vagrantfile.centos) should only be needed to:
 #     * change the memory or CPU settings for the nodes
@@ -30,6 +31,7 @@ $boxVer      = "20190411.0.0"
 $hostAdapter = "enp0s8"
 
 # Default values, for configurable parameters
+# NOTE: These default values are replaced at runtime via sed, as needed.
 $cpu         = "2"
 $mem         = "2048"
 $net         = "calico"
@@ -67,13 +69,15 @@ $calico2 = "https://docs.projectcalico.org/v3.3/getting-started/kubernetes/insta
 
 # Canal yaml:
 $canal1 = "https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/canal/rbac.yaml"
-# As with Flannel, must point to enp0s8 interface: $canal2 = "https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/canal/canal.yaml"
-# use local canal.yaml file, which corrects for Vagrant/VBox (points to 2nd NIC)
+# As with Flannel, must point to enp0s8 interface. The original file lives at:
+#   https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/canal/canal.yaml
+# Instead, use local canal.yaml file, which corrects for Vagrant/VBox (points to 2nd NIC)
 $canal2 = "/vagrant/canal2.yaml"
 
 # Flannel yaml:
-# Needs tweak for Vagrant: $flannel = "https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml", mod'd here as kube-flannel.yaml
-# use local kube-flannel.yaml file, which corrects for Vagrant/VBox (points to 2nd NIC)
+# Needs tweak for Vagrant: The original file lives at:
+#   https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml
+# Instead, use local kube-flannel.yaml file, which corrects for Vagrant/VBox (points to 2nd NIC),
 $flannel = "/vagrant/kube-flannel.yaml"
 
 # Romana yaml:
@@ -194,18 +198,23 @@ EOF
   deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 
-  echo Install kubernetes packages: kubelet, kubeadm, kubectl
+  echo "Install kubernetes packages: kubelet, kubeadm, kubectl"
   ## Install kubernetes packages, and block them from being from upgraded by apt
   apt-get update
   apt-get install -y kubelet kubeadm kubectl
   apt-mark hold kubelet kubeadm kubectl
   # ---- END kubeadm install
 
-  echo Apply all updates
+  # This update seems to be giving problems (4/2019)
+  # In particular, WSL Ubuntu bash gets stuck running "vagrant up", when apt tries to
+  # upgrade this particular package. So -- DON'T upgrade it (for now, anyway).
+  apt-mark hold console-setup
+
+  echo "Apply all updates"
   # install all current updates
   apt-get upgrade -y
 
-  echo Permanently enable ip_forward, bridge-nf-call-iptables
+  echo "Permanently enable ip_forward, bridge-nf-call-iptables"
   # Apply these settings, permanently, to avoid errors in Kubeadm preflight checks
   cat >/etc/sysctl.d/99-kubernetes.conf <<EOF
 net.bridge.bridge-nf-call-ip6tables = 1
@@ -213,11 +222,11 @@ net.bridge.bridge-nf-call-iptables  = 1
 net.ipv4.ip_forward                 = 1
 EOF
 
-  echo Disabling swap, for now
+  echo "Disabling swap, for now"
   # kubelet requires swap off -- see "Installing kubeadm", "Before you begin"
   swapoff -a
 
-  echo Disabling swap, forever
+  echo "Disabling swap, forever"
   # keep swap off after reboot (insert '#' at start of any line containing 'swap'
   # note: '\(' and '\)' define a remembered pattern, '\1' is the name of that pattern
   # as such, any line with ' swap ' in it is prepended with a '#'
@@ -233,10 +242,13 @@ EOF
   # As such, we must specify the host-only IP address for kubernetes to use
   #
   # set node-ip in the relevant kubelet file under /etc, then restart the kubelet
-  sudo sed -i "/^[^#]*KUBELET_EXTRA_ARGS=/c\KUBELET_EXTRA_ARGS=--node-ip=$IP_ADDR" #{$cfgKubelet}
+  # FYI: some discussion of this here: https://github.com/kubernetes/kubeadm/issues/203
+  echo "Setting node-ip in Kubelet configuration -- use host-only network IP"
+  sudo echo "KUBELET_EXTRA_ARGS=--node-ip=$IP_ADDR" >>#{$cfgKubelet}
   sudo systemctl restart kubelet
 
   # NFS client to be available everywhere:
+  echo "Install NFS Client"
   apt-get install -y nfs-common
 
   # Copy key-pair from host's project directory to vagrant user's .ssh directory on node
@@ -296,11 +308,6 @@ $configureMaster = <<SCRIPT
     echo "      up ip route add 10.96.0.1/32 via #{$masterIp}" >>/etc/network/interfaces
     ifdown enp0s8 && ifup enp0s8
 
-    ## For CentOS, add a file containing the desired route
-    #echo "10.96.0.1 via #{$masterIp} dev eth1" >./route-eth1
-    #sudo mv ./route-eth1 /etc/sysconfig/network-scripts/
-    #sudo systemctl restart network
-
     kubectl apply -f #{$weave}
   elif [[ #{$net} = "calico" ]]; then
     echo "net: #{$net}. installing calico"
@@ -346,11 +353,6 @@ $configureNode = <<SCRIPT
     ## For Ubuntu, append a line to the end of /etc/network/interfaces, and restart the interface
     echo "      up ip route add 10.96.0.1/32 via #{$masterIp}" >>/etc/network/interfaces
     ifdown enp0s8 && ifup enp0s8
-
-    ## For CentOS, add a file containing the desired route
-    #echo "10.96.0.1 via #{$masterIp} dev eth1" >./route-eth1
-    #sudo mv ./route-eth1 /etc/sysconfig/network-scripts/
-    #sudo systemctl restart network
   fi
 
   echo "Copy join script from master node to local directory"
