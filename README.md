@@ -73,7 +73,7 @@ usage: source ./makeK8s.sh [-h][-s centos | ubuntu][-o destDir][-m memSize][-c c
 options:
   -s specifies either CentOS or Ubuntu nodes
   -o specifies the destination directory, where kubeconfig files are being collected
-  -m specifies how many GB memory for each VM
+  -m specifies memory for each VM (MB)
   -c specifies how many vCPUs for each VM
   -i specifies master IP address
   -n specifies network, one of calico, canal, flannel, romana, weave
