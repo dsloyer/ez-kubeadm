@@ -22,6 +22,8 @@ Code" personal challenge, was to:
 
 All the files that comprise this project are in https://github.com/dsloyer/ez-kubeadm
 
+Inspiration provided by: Raj Rajaratnam. Thank you, Raj!
+
 ## Overview
 * **Kubeadm** is the tool used to deploy the cluster.
 * **Vagrant** installs and configures the Ubuntu/CentOS boxes on **VirtualBox**.
