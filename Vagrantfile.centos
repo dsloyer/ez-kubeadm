@@ -72,13 +72,13 @@ $canal1 = "https://docs.projectcalico.org/v3.3/getting-started/kubernetes/instal
 # As with Flannel, must point to enp0s8 interface. The original file lives at:
 #   https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/canal/canal.yaml
 # Instead, use local canal.yaml file, which corrects for Vagrant/VBox (points to 2nd NIC)
-$canal2 = "/vagrant/canal2.yaml"
+$canal2 = "/vagrant/canal2c.yaml"
 
 # Flannel yaml:
 # Needs tweak for Vagrant: The original file lives at:
 #   https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml
 # Instead, use local kube-flannel.yaml file, which corrects for Vagrant/VBox (points to 2nd NIC),
-$flannel = "/vagrant/kube-flannel.yaml"
+$flannel = "/vagrant/kube-flannelc.yaml"
 
 # Romana yaml:
 # ORG $romana = "https://raw.githubusercontent.com/romana/romana/master/containerize/specs/romana-kubeadm.yml"
