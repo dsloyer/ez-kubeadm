@@ -84,7 +84,7 @@ fi
 
 if [[ ! -d $destDir ]]; then
   echo "directory, $destDir, does not exist. Creating it now."
-  mkdir $destDir
+  mkdir -p $destDir
 fi
 
 echo "project:     $proj"
