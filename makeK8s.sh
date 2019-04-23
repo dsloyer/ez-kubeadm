@@ -69,10 +69,10 @@ else
   echo "pwd: $(pwd)"
   if [[ -f Vagrantfile ]]; then
     echo "There is a Vagrantfile in current directory"
+    vagrant destroy -f
   else
-    echo "No Vagrantfile in current directory"
+    echo "No Vagrantfile in current directory. Skip destroy"
   fi
-  vagrant destroy -f
 fi
 
 if [[ $destroy -eq 1 ]]; then
