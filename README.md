@@ -242,7 +242,8 @@ a few additional commands I've detailed just below.
      but the kubeconfig file will still exist.
   10. When the preferred host user account is created on the k8s master and nodes, the accounts password
       is set (needed for sudo).  The password is set to "qwerty0987".
-  11. By default, the master node's taint against running pods is removed.
+  11. By default, the master node's taint against running pods is removed. If you don't want pods to be
+      scheduled on the master node, comment out, or remove, the line in Vagrantfile.centos/Vagrantfile.ubuntu.
   12. I like to ssh directly into the cluster from any directory on my host.  These scripts support this by
       pushing an SSH public key down to each node.
 
