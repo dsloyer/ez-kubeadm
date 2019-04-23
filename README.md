@@ -378,4 +378,4 @@ Thankfully, the project directory is automatically mounted onto each node by Vag
 Therefore, the SSH keys of interest are accessible by all our Vagrant VMs, at that location.
 
 NOTE: The mount is only automatic during node creation, and must be re-mounted manually if the node
-reboots (However, mount can be made automatic).
+reboots (Note: mount can be made automatic).
