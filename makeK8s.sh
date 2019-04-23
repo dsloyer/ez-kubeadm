@@ -65,7 +65,7 @@ else
   else
     echo "No existing kubeconfig file, $kcfg, found."
   fi
-  echo "Destroy existing kubernetes cluster; pwd: $pwd"
+  echo "Destroy existing kubernetes cluster; pwd: $(pwd)"
   vagrant destroy -f
 fi
 
