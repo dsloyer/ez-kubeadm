@@ -58,7 +58,6 @@ dstOpt="-o $dstDir"
 if [[ $test -eq 1 ]]; then
   echo "Would destroy existing kubernetes cluster"
 else
-  echo "Destroy existing kubernetes cluster"
   kcfg=$dstDir/$proj.kubeconfig
   if [[ -f $kcfg ]]; then
     echo "Found kubeconfig file, $kcfg. Deleting it"
@@ -66,6 +65,7 @@ else
   else
     echo "No existing kubeconfig file, $kcfg, found."
   fi
+  echo "Destroy existing kubernetes cluster; pwd: $pwd"
   vagrant destroy -f
 fi
 
