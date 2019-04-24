@@ -204,7 +204,7 @@ a few additional commands I've detailed just below.
        192.168.205.11
        CentOS cmaster IP is 192.168.205.15; worker node IPs immediately follow, i.e. cnode1 is
        192.168.205.16
-     * want more/fewer nodes? edit the servers array i seems to present sev seems to present sev seems to present sev seems to present sev seems to present several painful issues
+     * want more/fewer nodes? edit the servers array
   2. To set the KUBECONFIG env var at any time, e.g. on a new shell instance, cd to the project
      directory, and "source" the script, setKubeConfigVar.sh:
      ```
@@ -241,7 +241,7 @@ a few additional commands I've detailed just below.
      If the cluster is removed using, say "vagrant destroy -f", then the cluster will be destroyed,
      but the kubeconfig file will still exist.
   10. When the preferred host user account is created on the k8s master and nodes, the accounts password
-      is set (needed for sudo).  The password is set to "qwerty0987".
+      is set (needed for sudo).  The password is set to "qwerty0987".  Change it, when/if desired.
   11. By default, the master node's taint against running pods is removed. If you don't want pods to be
       scheduled on the master node, comment out, or remove, the line in Vagrantfile.centos/Vagrantfile.ubuntu.
   12. I like to ssh directly into the cluster from any directory on my host.  These scripts support this by
